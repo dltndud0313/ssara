@@ -118,7 +118,7 @@ git stash pop            # 다시 적용
 
 # 7. 내가 맡은 하나의 기능 구현이 다 되면 MR(=PR) 올리고 Merge 하기
 
-![MR_예시사진](\S14P11C101\docs\gitlab_mr.png)
+![MR_예시사진](/S14P11C101/docs/gitlab_mr.png)
 
 - **GitLab은 Merge Request**, GitHub은 Pull Request
 - **맡은 기능이 완전히 다 구현이 되었을 때 MR을 올립니다!** **오늘 하루 일 다 끝났다거나 잠깐 쉬기 전**에 코드 반영하는 건 **6-1번으로 가세요!**
