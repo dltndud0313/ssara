@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: gae-server
+  profiles:
+    active: dev  # 여기서 'dev'를 선택했기 때문에 자동으로 application-dev.yml을 읽습니다.
