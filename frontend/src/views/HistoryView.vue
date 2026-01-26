@@ -1,0 +1,521 @@
+<template>
+  <div class="history">
+    <header class="header">
+      <h1 class="header-title">활동 기록</h1>
+      <button class="filter-btn" @click="showFilter = !showFilter">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- 필터 패널 -->
+    <div v-if="showFilter" class="filter-panel">
+      <div class="filter-chips">
+        <button
+          v-for="filter in filters"
+          :key="filter.value"
+          class="filter-chip"
+          :class="{ active: selectedFilter === filter.value }"
+          @click="selectedFilter = filter.value"
+        >
+          {{ filter.label }}
+        </button>
+      </div>
+    </div>
+
+    <main class="content">
+      <!-- 오늘 요약 카드 -->
+      <section class="summary-card">
+        <div class="summary-header">
+          <span class="summary-label">오늘의 활동</span>
+          <span class="summary-date">{{ todayDateShort }}</span>
+        </div>
+        <div class="summary-stats">
+          <div class="stat-item">
+            <div class="stat-icon walk">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 4v16M7 4v16M3 8l4-4 4 4M13 20l4-4 4 4"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ todaySummary.walkTime }}분</span>
+              <span class="stat-label">산책 시간</span>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-icon distance">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                <path d="M2 12h20"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ todaySummary.distance }}km</span>
+              <span class="stat-label">이동 거리</span>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-icon events">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ todaySummary.totalEvents }}건</span>
+              <span class="stat-label">총 기록</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 활동 로그 목록 -->
+      <section class="log-section">
+        <div class="section-header">
+          <h3 class="section-title">오늘</h3>
+          <span class="section-date">{{ todayDate }}</span>
+        </div>
+
+        <div class="log-list">
+          <div
+            v-for="(log, index) in filteredLogs"
+            :key="index"
+            class="log-item"
+          >
+            <div class="log-icon" :class="log.type">
+              <component :is="getIcon(log.type)" />
+            </div>
+            <div class="log-content">
+              <span class="log-message">{{ log.msg }}</span>
+              <span class="log-detail" v-if="log.detail">{{ log.detail }}</span>
+            </div>
+            <span class="log-time">{{ log.time }}</span>
+          </div>
+        </div>
+
+        <!-- 어제 로그 -->
+        <div class="section-header">
+          <h3 class="section-title">어제</h3>
+          <span class="section-date">{{ yesterdayDate }}</span>
+        </div>
+
+        <div class="log-list">
+          <div
+            v-for="(log, index) in yesterdayLogs"
+            :key="'y'+index"
+            class="log-item"
+          >
+            <div class="log-icon" :class="log.type">
+              <component :is="getIcon(log.type)" />
+            </div>
+            <div class="log-content">
+              <span class="log-message">{{ log.msg }}</span>
+              <span class="log-detail" v-if="log.detail">{{ log.detail }}</span>
+            </div>
+            <span class="log-time">{{ log.time }}</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="bottom-spacer"></div>
+    </main>
+
+    <!-- 하단 네비게이션 -->
+    <nav class="bottom-nav">
+      <button class="nav-item" @click="$router.push('/home')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>홈</span>
+      </button>
+      <button class="nav-item" @click="$router.push('/location')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>위치</span>
+      </button>
+      <button class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>기록</span>
+      </button>
+      <button class="nav-item" @click="$router.push('/profile')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>내 정보</span>
+      </button>
+    </nav>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, h } from 'vue';
+import { robotState } from '../store.js';
+
+const showFilter = ref(false);
+const selectedFilter = ref('all');
+
+const filters = [
+  { label: '전체', value: 'all' },
+  { label: '정보', value: 'info' },
+  { label: '주의', value: 'warning' },
+  { label: '활동', value: 'action' }
+];
+
+const todaySummary = ref({
+  totalEvents: 0,
+  walkTime: 0,
+  alerts: 0,
+  distance: 0
+});
+
+// 오늘/어제 날짜
+const todayDate = new Date().toLocaleDateString('ko-KR', {
+  year: 'numeric', month: 'long', day: 'numeric'
+});
+const todayDateShort = new Date().toLocaleDateString('ko-KR', {
+  month: 'long', day: 'numeric', weekday: 'short'
+});
+const yesterday = new Date();
+yesterday.setDate(yesterday.getDate() - 1);
+const yesterdayDate = yesterday.toLocaleDateString('ko-KR', {
+  year: 'numeric', month: 'long', day: 'numeric'
+});
+
+// 오늘 로그 (store에서 가져옴)
+const todayLogs = computed(() => [...robotState.logs]);
+
+// 어제 로그
+const yesterdayLogs = ref([]);
+
+// 필터링된 로그
+const filteredLogs = computed(() => {
+  if (selectedFilter.value === 'all') return todayLogs.value;
+  return todayLogs.value.filter(log => log.type === selectedFilter.value);
+});
+
+// 아이콘 컴포넌트
+const getIcon = (type) => {
+  const icons = {
+    info: () => h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
+      h('circle', { cx: 12, cy: 12, r: 10 }),
+      h('line', { x1: 12, y1: 16, x2: 12, y2: 12 }),
+      h('line', { x1: 12, y1: 8, x2: 12.01, y2: 8 })
+    ]),
+    warning: () => h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
+      h('path', { d: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z' }),
+      h('line', { x1: 12, y1: 9, x2: 12, y2: 13 }),
+      h('line', { x1: 12, y1: 17, x2: 12.01, y2: 17 })
+    ]),
+    action: () => h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
+      h('polygon', { points: '13 2 3 14 12 14 11 22 21 10 12 10 13 2' })
+    ])
+  };
+  return icons[type] || icons.info;
+};
+</script>
+
+<style scoped>
+.history {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+  padding-bottom: 80px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--bg-primary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.filter-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: background 0.2s;
+}
+
+.filter-btn:active {
+  background: var(--gray-200);
+}
+
+/* 필터 패널 */
+.filter-panel {
+  background: var(--bg-primary);
+  padding: 12px 20px 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.filter-chips {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-chip {
+  padding: 8px 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  background: var(--bg-primary);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.filter-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.content {
+  padding: 0 20px 20px;
+}
+
+/* 요약 카드 */
+.summary-card {
+  background: var(--bg-primary);
+  border-radius: 20px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.summary-label {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.summary-date {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.summary-stats {
+  display: flex;
+  align-items: center;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--gray-100);
+  margin: 0 12px;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon.walk {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.stat-icon.distance {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.stat-icon.events {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* 로그 섹션 */
+.log-section {
+  margin-top: 28px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-date {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.log-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-primary);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.log-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.log-icon.info {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.log-icon.warning {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.log-icon.action {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.log-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.log-message {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.log-detail {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.log-time {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.bottom-spacer {
+  height: 20px;
+}
+
+/* 하단 네비게이션 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  height: 72px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  color: var(--gray-400);
+}
+
+.nav-item svg {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-item span {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.nav-item.active {
+  color: var(--primary);
+}
+</style>
