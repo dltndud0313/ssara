@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // 로그인, 회원가입은 허용
+                        .requestMatchers("/error").permitAll() // 에러 페이지 허용
                         .anyRequest().authenticated() // 나머지는 인증 필요
                 )
                 .exceptionHandling(ex -> ex
