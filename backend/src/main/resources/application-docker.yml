@@ -1,0 +1,22 @@
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+    show-sql: false
+
+jwt:
+  secret: c2lsdmVyLWxpbmUtcHJvamVjdC1zZWNyZXQta2V5LWZvci1qd3Qtc2lnbmF0dXJlLWV4YW1wbGU=
+  expiration: 86400000
