@@ -1,0 +1,29 @@
+ARG BASE_IMAGE=isaac_sim
+FROM ${BASE_IMAGE}
+
+ARG USER_NAME=isaac-sim
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+USER root
+
+# Create the user
+# Note: We groupadd/useradd carefully to avoid conflicts if ID exists
+# We use a shell script block for complex logic to handle existing users
+RUN if getent group ${USER_GID} > /dev/null; then \
+      groupmod -n ${USER_NAME} $(getent group ${USER_GID} | cut -d: -f1); \
+    else \
+      groupadd -g ${USER_GID} ${USER_NAME}; \
+    fi && \
+    if getent passwd ${USER_UID} > /dev/null; then \
+      usermod -l ${USER_NAME} -d /home/${USER_NAME} -m -g ${USER_GID} $(getent passwd ${USER_UID} | cut -d: -f1); \
+    else \
+      useradd -u ${USER_UID} -g ${USER_GID} -m -s /bin/bash ${USER_NAME}; \
+    fi
+
+# Ensure sudo access without password
+RUN echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER_NAME} \
+    && chmod 0440 /etc/sudoers.d/${USER_NAME}
+
+USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}

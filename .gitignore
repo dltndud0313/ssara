@@ -1,0 +1,7 @@
+data/OrbbecSDK_ROS2/
+data/SpotMicro-IsaacLab/
+data/original_robot/
+data/SpotMicroJetson/
+
+.agent/
+.obsidian/
