@@ -61,11 +61,24 @@ measure tool
 팝업 상자에서 '강체 재질'을 선택하세요 . PhysicsMaterial스테이지 트리에 새 항목이 나타납니다.
 속성 탭에서 마찰 계수 및 반발력과 같은 매개변수를 조정하십시오.
 
-
-
 조인트 보는 법
 좌상단 눈깔아이콘 클릭하고 조인트 활성화
 
 센서 부착 위치는 `링크의 원점`이다.
 
 카메라 삽입 시  usd로 변환 후 prim에 끌어 놓으면 이동 잘 된다.
+
+# Assets configuration
+마운트 복사해서 맞춰 놓고,
+Asset 디렉토리
+`~/IsaacLab/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/config` 여기에 `custom_quadruped` 폴더 구조 참조해서 사용할 로봇에 맞춘 폴더 추가하기
+실행 명령어
+> 학습을 시작하지.
+```bash
+cd ~/IsaacLab
+./isaaclab.sh ~/IsaacLab/scripts/reinforcement_learning/rsl_rl/train.py
+```
+
+https://www.youtube.com/watch?v=z62oU4hM1xM&list=PL0-Gs4T6GAt1LoTibdw-0e3Vaeq9g7-oD&index=2
+11:13 학습 방법 시작~!
+12:11 부터 이어서 정리 
