@@ -22,7 +22,7 @@ docker_args=(
     -v ~/docker/isaac-sim/pkg:/isaac-sim/.local/share/ov/pkg:rw
     # Bind additional Mounts
     -v /home/actuating/workspaces/spotmicro/data/usd:/isaac-sim/data/usd:rw
-
+    -v /home/actuating/workspaces/spotmicro/data/train_myrobot/config:/isaac-sim/IsaacLab/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/config:rw    
     isaac-sim-img
 )
 
