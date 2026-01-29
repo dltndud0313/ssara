@@ -15,11 +15,8 @@ public class EmailService {
 
     /**
      * 임시 비밀번호 이메일 발송
-     * (테스트 모드: 콘솔에 출력)
      */
     public void sendTempPassword(String toEmail, String tempPassword) {
-        // TODO: 실제 운영 시 아래 주석 해제하고 콘솔 출력 부분 삭제
-        /*
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
         message.setSubject("[파트라슈 봇] 임시 비밀번호 안내");
@@ -40,13 +37,5 @@ public class EmailService {
             log.error("이메일 발송 실패: {}", e.getMessage());
             throw new RuntimeException("이메일 발송에 실패했습니다.");
         }
-        */
-
-        // 테스트용: 콘솔에 임시 비밀번호 출력
-        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log.info("📧 임시 비밀번호 발송 (테스트 모드)");
-        log.info("수신자: {}", toEmail);
-        log.info("임시 비밀번호: {}", tempPassword);
-        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
 }
