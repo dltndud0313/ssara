@@ -20,12 +20,12 @@ spring:
     show-sql: true
 
 
-  # 3. 메일 (가짜 데이터)
+  # 3. 메일 (Gmail SMTP)
   mail:
     host: smtp.gmail.com
     port: 587
-    username: temp@gmail.com
-    password: temp_password
+    username: your-email@gmail.com    # 본인 Gmail 입력
+    password: xxxx xxxx xxxx xxxx     # Gmail 앱 비밀번호 (16자리)
     properties:
       mail:
         smtp:
