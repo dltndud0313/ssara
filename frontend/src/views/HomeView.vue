@@ -6,10 +6,11 @@
         <span class="greeting">안녕하세요</span>
         <h1 class="title">우리 가족 돌봄</h1>
       </div>
-      <button class="icon-btn" @click="$router.push('/profile')">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
+      <button class="icon-btn logout-btn" @click="handleLogout" title="로그아웃">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
         </svg>
       </button>
     </header>
@@ -17,7 +18,7 @@
     <!-- 메인 콘텐츠 -->
     <main class="content">
       <!-- 로봇 상태 카드 -->
-      <section class="status-card" :class="{ offline: robotState.status !== 'ONLINE' }">
+      <section class="status-card" :class="{ offline: !isOnline }">
         <div class="status-header">
           <div class="robot-avatar">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -30,8 +31,8 @@
           <div class="robot-info">
             <h2 class="robot-name">{{ robotState.name }}</h2>
             <div class="connection-status">
-              <span class="status-dot" :class="{ online: robotState.status === 'ONLINE' }"></span>
-              <span class="status-text">{{ robotState.status === 'ONLINE' ? '연결됨' : '연결 안 됨' }}</span>
+              <span class="status-dot" :class="{ online: isOnline }"></span>
+              <span class="status-text">{{ isOnline ? '연결됨' : '연결 안 됨' }}</span>
             </div>
           </div>
         </div>
@@ -45,16 +46,16 @@
                   <line x1="23" y1="13" x2="23" y2="11"/>
                 </svg>
               </div>
-              <span class="battery-percent" :class="batteryClass">{{ robotState.battery }}%</span>
+              <span class="battery-percent" :class="batteryClass">{{ currentBattery }}%</span>
               <span class="battery-status">{{ batteryStatusText }}</span>
             </div>
             <div class="battery-bar">
-              <div class="battery-fill" :class="batteryClass" :style="{ width: robotState.battery + '%' }"></div>
+              <div class="battery-fill" :class="batteryClass" :style="{ width: currentBattery + '%' }"></div>
             </div>
           </div>
           <div class="status-item">
             <span class="label">현재 위치</span>
-            <span class="value location">{{ robotState.location }}</span>
+            <span class="value location">{{ currentLocation }}</span>
           </div>
         </div>
 
@@ -171,25 +172,68 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { robotState } from '../store.js';
+import { useAuthStore } from '../stores/authStore';
+import { useRobotStore } from '@/stores/robotStore';
+
+const router = useRouter();
+const authStore = useAuthStore();
+const robotStore = useRobotStore();
 
 const todaySummary = ref({
   walkTime: 0,
   alerts: 0
 });
 
+const loading = ref(true);
+
+onMounted(async () => {
+  await robotState.fetchRobot();
+  // WebSocket 연결 (위치 페이지와 동일한 실시간 데이터 사용)
+  robotStore.connectWebSocket();
+  loading.value = false;
+});
+
+onUnmounted(() => {
+  robotStore.disconnectWebSocket();
+});
+
+// 실시간 배터리 값 (WebSocket에서 받은 값 사용, 없으면 API 값 사용)
+const currentBattery = computed(() => {
+  return robotStore.robotStatus.battery || robotState.battery;
+});
+
+// 실시간 위치 값 (WebSocket에서 받은 값 사용)
+const currentLocation = computed(() => {
+  if (robotStore.robotPose.x || robotStore.robotPose.y) {
+    return `(${robotStore.robotPose.x.toFixed(1)}, ${robotStore.robotPose.y.toFixed(1)})`;
+  }
+  return robotState.location || '위치 정보 없음';
+});
+
+// 실시간 연결 상태
+const isOnline = computed(() => {
+  return robotStore.robotStatus.isOnline || robotState.status === 'ONLINE';
+});
+
 const batteryClass = computed(() => {
-  if (robotState.battery <= 20) return 'low';
-  if (robotState.battery <= 50) return 'medium';
+  if (currentBattery.value <= 20) return 'low';
+  if (currentBattery.value <= 50) return 'medium';
   return 'high';
 });
 
 const batteryStatusText = computed(() => {
-  if (robotState.battery <= 20) return '충전 필요';
-  if (robotState.battery <= 50) return '보통';
+  if (currentBattery.value <= 20) return '충전 필요';
+  if (currentBattery.value <= 50) return '보통';
   return '충분';
 });
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/');
+};
 </script>
 
 <style scoped>
@@ -235,6 +279,14 @@ const batteryStatusText = computed(() => {
 
 .icon-btn:active {
   background: var(--gray-200);
+}
+
+.logout-btn {
+  color: var(--text-tertiary);
+}
+
+.logout-btn:hover {
+  color: #EF4444;
 }
 
 /* 메인 콘텐츠 */
