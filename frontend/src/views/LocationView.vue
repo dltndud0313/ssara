@@ -4,7 +4,7 @@
       <h1 class="header-title">위치</h1>
       <div class="status-badge" :class="{ online: robotState.status === 'ONLINE' }">
         <span class="dot"></span>
-        {{ robotState.status === 'ONLINE' ? '실시간' : '오프라인' }}
+        {{ robotState.status === 'ONLINE' ? '활성화' : '비활성화' }}
       </div>
     </header>
 
@@ -36,23 +36,7 @@
 
       <!-- 상태 카드 -->
       <section class="status-section">
-        <div class="status-card">
-          <div class="status-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="6" width="18" height="12" rx="2" ry="2"/>
-              <line x1="23" y1="13" x2="23" y2="11"/>
-            </svg>
-          </div>
-          <div class="status-content">
-            <span class="status-value">{{ robotState.battery }}%</span>
-            <span class="status-label">배터리</span>
-          </div>
-          <div class="battery-bar">
-            <div class="battery-fill" :style="{ width: robotState.battery + '%' }"></div>
-          </div>
-        </div>
-
-        <div class="status-card">
+        <div class="status-card full-width">
           <div class="status-icon orange">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -61,32 +45,6 @@
           <div class="status-content">
             <span class="status-value">{{ activityStatus }}</span>
             <span class="status-label">활동 상태</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- 오늘 이동 경로 -->
-      <section class="route-section">
-        <div class="section-header">
-          <h3 class="section-title">오늘 이동 경로</h3>
-          <span class="total-distance">{{ totalDistance }}km</span>
-        </div>
-
-        <div class="route-list">
-          <div
-            v-for="(route, index) in routes"
-            :key="index"
-            class="route-item"
-            :class="{ current: index === 0 }"
-          >
-            <div class="route-marker">
-              <div class="marker-dot"></div>
-              <div v-if="index < routes.length - 1" class="marker-line"></div>
-            </div>
-            <div class="route-content">
-              <span class="route-place">{{ route.place }}</span>
-              <span class="route-time">{{ route.time }}</span>
-            </div>
           </div>
         </div>
       </section>
@@ -160,20 +118,42 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { robotState } from '../store.js';
+import { computed, onMounted, onUnmounted } from 'vue';
+import { useRobotStore } from '@/stores/robotStore';
 
-const routes = ref([]);
-const totalDistance = ref(0);
-const activityStatus = ref('-');
+const robotStore = useRobotStore();
 
-const sendCommand = (cmd) => {
-  const msgs = {
-    home: '집으로 복귀 명령을 보냈어요',
-    stay: '제자리 대기 명령을 보냈어요'
-  };
-  robotState.addLog(msgs[cmd], 'action');
-  alert(msgs[cmd]);
+// WebSocket 연결 관리
+onMounted(() => {
+  robotStore.connectWebSocket();
+});
+
+onUnmounted(() => {
+  robotStore.disconnectWebSocket();
+});
+
+// 기존 robotState 호환을 위한 computed
+const robotState = computed(() => ({
+  status: robotStore.robotStatus.isOnline ? 'ONLINE' : 'OFFLINE',
+  location: `(${(robotStore.robotPose.x || 0).toFixed(1)}, ${(robotStore.robotPose.y || 0).toFixed(1)})`
+}));
+
+// 활동 상태
+const activityStatus = computed(() => robotStore.robotStatus.state || '-');
+
+// 명령 전송
+const sendCommand = async (cmd) => {
+  try {
+    if (cmd === 'home') {
+      await robotStore.sendHomeCommand();
+      alert('집으로 복귀 명령을 보냈어요');
+    } else if (cmd === 'stay') {
+      await robotStore.sendStopCommand();
+      alert('제자리 대기 명령을 보냈어요');
+    }
+  } catch (error) {
+    alert('명령 전송에 실패했어요');
+  }
 };
 </script>
 
@@ -309,6 +289,11 @@ const sendCommand = (cmd) => {
   padding: 16px;
 }
 
+.status-card.full-width {
+  flex: none;
+  width: 100%;
+}
+
 .status-icon {
   width: 40px;
   height: 40px;
@@ -343,103 +328,14 @@ const sendCommand = (cmd) => {
   margin-top: 2px;
 }
 
-.battery-bar {
-  height: 4px;
-  background: var(--gray-200);
-  border-radius: 2px;
-  margin-top: 12px;
-  overflow: hidden;
-}
-
-.battery-fill {
-  height: 100%;
-  background: var(--success);
-  border-radius: 2px;
-}
-
-/* 이동 경로 */
-.route-section {
-  margin-top: 28px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
+/* 빠른 명령 */
 .section-title {
   font-size: 17px;
   font-weight: 600;
   color: var(--text-primary);
+  margin-bottom: 14px;
 }
 
-.total-distance {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--primary);
-}
-
-.route-list {
-  background: var(--bg-primary);
-  border-radius: 16px;
-  padding: 8px 0;
-}
-
-.route-item {
-  display: flex;
-  padding: 12px 18px;
-}
-
-.route-marker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-right: 14px;
-}
-
-.marker-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--gray-300);
-  flex-shrink: 0;
-}
-
-.route-item.current .marker-dot {
-  background: var(--primary);
-  box-shadow: 0 0 0 4px var(--primary-light);
-}
-
-.marker-line {
-  width: 2px;
-  flex: 1;
-  background: var(--gray-200);
-  margin-top: 6px;
-  min-height: 24px;
-}
-
-.route-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding-top: 0;
-}
-
-.route-place {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.route-time {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 2px;
-}
-
-/* 빠른 명령 */
 .command-section {
   margin-top: 28px;
 }
