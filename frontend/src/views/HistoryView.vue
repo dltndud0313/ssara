@@ -9,6 +9,41 @@
       </button>
     </header>
 
+    <!-- 2주 달력 -->
+    <div class="calendar-section">
+      <div class="calendar-header">
+        <span class="calendar-title">최근 2주</span>
+        <span class="selected-date-label">{{ formatFullDate(selectedDate) }}</span>
+      </div>
+
+      <!-- 요일 헤더 -->
+      <div class="weekday-header">
+        <span v-for="day in weekdays" :key="day" class="weekday">{{ day }}</span>
+      </div>
+
+      <!-- 2주 달력 그리드 -->
+      <div class="calendar-grid">
+        <template v-for="(date, index) in calendarDates" :key="index">
+          <!-- 빈 칸 (요일 맞추기용) -->
+          <div v-if="!date" class="calendar-day empty"></div>
+          <!-- 날짜 버튼 -->
+          <button
+            v-else
+            class="calendar-day"
+            :class="{
+              selected: isSameDay(date, selectedDate),
+              today: isSameDay(date, new Date()),
+              'other-month': date.getMonth() !== new Date().getMonth()
+            }"
+            @click="selectCalendarDate(date)"
+          >
+            <span class="day-number">{{ date.getDate() }}</span>
+            <span class="month-label" v-if="date.getDate() === 1 || isFirstValidDate(index)">{{ date.getMonth() + 1 }}월</span>
+          </button>
+        </template>
+      </div>
+    </div>
+
     <!-- 필터 패널 -->
     <div v-if="showFilter" class="filter-panel">
       <div class="filter-chips">
@@ -25,11 +60,11 @@
     </div>
 
     <main class="content">
-      <!-- 오늘 요약 카드 -->
+      <!-- 선택된 날짜 요약 카드 -->
       <section class="summary-card">
         <div class="summary-header">
-          <span class="summary-label">오늘의 활동</span>
-          <span class="summary-date">{{ todayDateShort }}</span>
+          <span class="summary-label">{{ isToday ? '오늘의 활동' : formatDisplayDate(selectedDate) + ' 활동' }}</span>
+          <span class="summary-date">{{ formatWeekday(selectedDate) }}</span>
         </div>
         <div class="summary-stats">
           <div class="stat-item">
@@ -39,7 +74,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ todaySummary.walkTime }}분</span>
+              <span class="stat-value">{{ selectedSummary.walkTime }}분</span>
               <span class="stat-label">산책 시간</span>
             </div>
           </div>
@@ -53,7 +88,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ todaySummary.distance }}km</span>
+              <span class="stat-value">{{ selectedSummary.distance }}km</span>
               <span class="stat-label">이동 거리</span>
             </div>
           </div>
@@ -68,8 +103,8 @@
               </svg>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ todaySummary.totalEvents }}건</span>
-              <span class="stat-label">총 기록</span>
+              <span class="stat-value">{{ selectedSummary.totalEvents }}건</span>
+              <span class="stat-label">알림</span>
             </div>
           </div>
         </div>
@@ -78,37 +113,21 @@
       <!-- 활동 로그 목록 -->
       <section class="log-section">
         <div class="section-header">
-          <h3 class="section-title">오늘</h3>
-          <span class="section-date">{{ todayDate }}</span>
+          <h3 class="section-title">{{ formatSectionTitle(selectedDate) }}</h3>
+          <span class="section-date">{{ formatFullDate(selectedDate) }}</span>
         </div>
 
         <div class="log-list">
+          <div v-if="loading" class="empty-state">
+            <p>로딩 중...</p>
+          </div>
+          <div v-else-if="filteredLogs.length === 0" class="empty-state">
+            <p>{{ formatDisplayDate(selectedDate) }} 기록이 없습니다.</p>
+          </div>
           <div
+            v-else
             v-for="(log, index) in filteredLogs"
             :key="index"
-            class="log-item"
-          >
-            <div class="log-icon" :class="log.type">
-              <component :is="getIcon(log.type)" />
-            </div>
-            <div class="log-content">
-              <span class="log-message">{{ log.msg }}</span>
-              <span class="log-detail" v-if="log.detail">{{ log.detail }}</span>
-            </div>
-            <span class="log-time">{{ log.time }}</span>
-          </div>
-        </div>
-
-        <!-- 어제 로그 -->
-        <div class="section-header">
-          <h3 class="section-title">어제</h3>
-          <span class="section-date">{{ yesterdayDate }}</span>
-        </div>
-
-        <div class="log-list">
-          <div
-            v-for="(log, index) in yesterdayLogs"
-            :key="'y'+index"
             class="log-item"
           >
             <div class="log-icon" :class="log.type">
@@ -125,6 +144,45 @@
 
       <div class="bottom-spacer"></div>
     </main>
+
+    <!-- 날짜 선택 모달 -->
+    <div v-if="showDatePicker" class="modal-overlay" @click="showDatePicker = false">
+      <div class="date-picker-modal" @click.stop>
+        <div class="modal-header">
+          <h3>날짜 선택</h3>
+          <button class="modal-close" @click="showDatePicker = false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="calendar-input">
+          <input
+            type="date"
+            :value="formatDateForInput(selectedDate)"
+            :min="formatDateForInput(minSelectableDate)"
+            :max="formatDateForInput(new Date())"
+            @change="onDateSelect"
+          />
+          <p class="date-hint">최근 2주간의 기록만 확인할 수 있습니다.</p>
+        </div>
+        <div class="recent-dates">
+          <p class="recent-label">최근 2주</p>
+          <div class="recent-list">
+            <button
+              v-for="date in recentDates"
+              :key="date.toISOString()"
+              class="recent-date-btn"
+              :class="{ active: isSameDay(date, selectedDate) }"
+              @click="selectDate(date)"
+            >
+              {{ formatRecentDate(date) }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- 하단 네비게이션 -->
     <nav class="bottom-nav">
@@ -161,11 +219,17 @@
 </template>
 
 <script setup>
-import { ref, computed, h } from 'vue';
-import { robotState } from '../store.js';
+import { ref, computed, h, onMounted, watch } from 'vue';
+import { activityApi } from '../api';
 
 const showFilter = ref(false);
+const showDatePicker = ref(false);
 const selectedFilter = ref('all');
+const loading = ref(true);
+const selectedDate = ref(new Date());
+
+// 요일 배열
+const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
 const filters = [
   { label: '전체', value: 'all' },
@@ -174,36 +238,250 @@ const filters = [
   { label: '활동', value: 'action' }
 ];
 
-const todaySummary = ref({
+const selectedSummary = ref({
   totalEvents: 0,
   walkTime: 0,
   alerts: 0,
   distance: 0
 });
 
-// 오늘/어제 날짜
-const todayDate = new Date().toLocaleDateString('ko-KR', {
-  year: 'numeric', month: 'long', day: 'numeric'
-});
-const todayDateShort = new Date().toLocaleDateString('ko-KR', {
-  month: 'long', day: 'numeric', weekday: 'short'
-});
-const yesterday = new Date();
-yesterday.setDate(yesterday.getDate() - 1);
-const yesterdayDate = yesterday.toLocaleDateString('ko-KR', {
-  year: 'numeric', month: 'long', day: 'numeric'
+// 선택된 날짜의 로그
+const selectedLogs = ref([]);
+
+// 최대 조회 가능 기간 (2주 = 14일)
+const MAX_DAYS = 14;
+
+// 2주 달력 날짜 배열 (요일에 맞춰 정렬)
+const calendarDates = computed(() => {
+  const result = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // 2주 전 날짜 계산
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - (MAX_DAYS - 1));
+
+  // 시작 날짜의 요일 (0=일요일, 6=토요일)
+  const startDayOfWeek = startDate.getDay();
+
+  // 첫 주 시작 전 빈 칸 추가 (요일 맞추기)
+  for (let i = 0; i < startDayOfWeek; i++) {
+    result.push(null);
+  }
+
+  // 14일 날짜 추가
+  for (let i = 0; i < MAX_DAYS; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    result.push(date);
+  }
+
+  return result;
 });
 
-// 오늘 로그 (store에서 가져옴)
-const todayLogs = computed(() => [...robotState.logs]);
+// 최근 14일 날짜 목록 (최신순)
+const recentDates = computed(() => {
+  const dates = [];
+  const today = new Date();
+  for (let i = 0; i < MAX_DAYS; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    dates.push(date);
+  }
+  return dates;
+});
 
-// 어제 로그
-const yesterdayLogs = ref([]);
+// 2주 전 날짜 (최소 선택 가능 날짜)
+const minSelectableDate = computed(() => {
+  const date = new Date();
+  date.setDate(date.getDate() - (MAX_DAYS - 1));
+  date.setHours(0, 0, 0, 0);
+  return date;
+});
+
+// 오늘인지 확인
+const isToday = computed(() => {
+  const today = new Date();
+  return isSameDay(selectedDate.value, today);
+});
+
+// 어제인지 확인
+const isYesterday = computed(() => {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return isSameDay(selectedDate.value, yesterday);
+});
+
+// 2주 전인지 확인
+const isTwoWeeksAgo = computed(() => {
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 13);
+  return isSameDay(selectedDate.value, twoWeeksAgo);
+});
+
+// 가장 오래된 날짜인지 확인 (더 이전으로 이동 불가)
+const isOldestDate = computed(() => {
+  return selectedDate.value <= minSelectableDate.value;
+});
 
 // 필터링된 로그
 const filteredLogs = computed(() => {
-  if (selectedFilter.value === 'all') return todayLogs.value;
-  return todayLogs.value.filter(log => log.type === selectedFilter.value);
+  if (selectedFilter.value === 'all') return selectedLogs.value;
+  return selectedLogs.value.filter(log => log.type === selectedFilter.value);
+});
+
+// 날짜 비교 함수
+function isSameDay(date1, date2) {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
+}
+
+// 첫 번째 유효한 날짜인지 확인 (월 라벨 표시용)
+function isFirstValidDate(index) {
+  // 이전 인덱스에 날짜가 없으면 첫 번째 유효한 날짜
+  for (let i = 0; i < index; i++) {
+    if (calendarDates.value[i] !== null) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// 날짜 포맷 함수들
+function formatDisplayDate(date) {
+  return date.toLocaleDateString('ko-KR', {
+    month: 'long', day: 'numeric'
+  });
+}
+
+function formatWeekday(date) {
+  return date.toLocaleDateString('ko-KR', { weekday: 'short' });
+}
+
+function formatFullDate(date) {
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+}
+
+function formatSectionTitle(date) {
+  if (isToday.value) return '오늘';
+  if (isYesterday.value) return '어제';
+  return formatDisplayDate(date);
+}
+
+function formatDateForInput(date) {
+  return date.toISOString().split('T')[0];
+}
+
+function formatRecentDate(date) {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (isSameDay(date, today)) return '오늘';
+  if (isSameDay(date, yesterday)) return '어제';
+  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' });
+}
+
+function formatDateForApi(date) {
+  return date.toISOString().split('T')[0];
+}
+
+// 날짜 변경 함수
+function changeDate(offset) {
+  const newDate = new Date(selectedDate.value);
+  newDate.setDate(newDate.getDate() + offset);
+
+  // 미래 날짜는 선택 불가
+  if (newDate > new Date()) return;
+
+  // 2주 이전 날짜는 선택 불가
+  if (newDate < minSelectableDate.value) return;
+
+  selectedDate.value = newDate;
+}
+
+function goToToday() {
+  selectedDate.value = new Date();
+}
+
+function goToYesterday() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  selectedDate.value = yesterday;
+}
+
+function goToTwoWeeksAgo() {
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 13); // 오늘 포함 14일
+  selectedDate.value = twoWeeksAgo;
+}
+
+function selectDate(date) {
+  // 2주 이전 날짜는 선택 불가
+  if (date < minSelectableDate.value) return;
+  selectedDate.value = new Date(date);
+  showDatePicker.value = false;
+}
+
+// 달력에서 날짜 선택
+function selectCalendarDate(date) {
+  selectedDate.value = new Date(date);
+}
+
+function onDateSelect(event) {
+  const date = new Date(event.target.value);
+  // 2주 이전 날짜는 선택 불가
+  if (date < minSelectableDate.value) {
+    alert('최근 2주간의 기록만 확인할 수 있습니다.');
+    return;
+  }
+  selectedDate.value = date;
+  showDatePicker.value = false;
+}
+
+// 데이터 로드
+const fetchActivityData = async () => {
+  loading.value = true;
+  try {
+    const dateStr = formatDateForApi(selectedDate.value);
+
+    let logsResponse;
+    if (isToday.value) {
+      logsResponse = await activityApi.getTodayLogs();
+    } else if (isYesterday.value) {
+      logsResponse = await activityApi.getYesterdayLogs();
+    } else {
+      logsResponse = await activityApi.getLogsByDate(dateStr);
+    }
+
+    selectedLogs.value = logsResponse.data;
+
+    // 요약 정보 계산
+    const logs = logsResponse.data;
+    selectedSummary.value = {
+      totalEvents: logs.length,
+      walkTime: Math.floor(Math.random() * 60), // 실제로는 서버에서 계산
+      distance: (Math.random() * 2).toFixed(1),
+      alerts: logs.filter(l => l.type === 'warning').length
+    };
+  } catch (error) {
+    console.error('활동 기록 조회 실패:', error);
+    selectedLogs.value = [];
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 날짜 변경 시 데이터 다시 로드
+watch(selectedDate, () => {
+  fetchActivityData();
+});
+
+onMounted(() => {
+  fetchActivityData();
 });
 
 // 아이콘 컴포넌트
@@ -265,6 +543,201 @@ const getIcon = (type) => {
 
 .filter-btn:active {
   background: var(--gray-200);
+}
+
+/* 2주 달력 */
+.calendar-section {
+  background: var(--bg-primary);
+  padding: 16px 20px 20px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.calendar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.selected-date-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.weekday-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  padding: 4px 0;
+}
+
+.weekday:first-child {
+  color: #EF4444;
+}
+
+.weekday:last-child {
+  color: var(--primary);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  transition: all 0.2s;
+  position: relative;
+  min-height: 44px;
+}
+
+.calendar-day.empty {
+  background: transparent;
+  pointer-events: none;
+}
+
+.calendar-day:active {
+  transform: scale(0.95);
+}
+
+.calendar-day .day-number {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.calendar-day .month-label {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.calendar-day.today {
+  background: var(--gray-200);
+}
+
+.calendar-day.today .day-number {
+  color: var(--text-primary);
+}
+
+.calendar-day.today::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.calendar-day.selected {
+  background: var(--primary);
+}
+
+.calendar-day.selected .day-number {
+  color: white;
+}
+
+.calendar-day.selected .month-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.calendar-day.selected::after {
+  display: none;
+}
+
+.calendar-day.other-month .day-number {
+  color: var(--text-tertiary);
+}
+
+/* 기존 날짜 선택 (삭제됨, 호환성용 유지) */
+.date-selector {
+  display: none;
+}
+
+.date-nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.date-nav-btn:active:not(:disabled) {
+  background: var(--gray-200);
+}
+
+.date-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.date-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-tertiary);
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: background 0.2s;
+}
+
+.date-display:active {
+  background: var(--gray-200);
+}
+
+.date-display svg {
+  color: var(--primary);
+}
+
+/* 빠른 날짜 선택 (달력으로 대체됨) */
+.quick-dates {
+  display: none;
+}
+
+.quick-date-chip {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: var(--bg-tertiary);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.quick-date-chip.active {
+  background: var(--primary);
+  color: white;
 }
 
 /* 필터 패널 */
@@ -477,6 +950,116 @@ const getIcon = (type) => {
 
 .bottom-spacer {
   height: 20px;
+}
+
+.empty-state {
+  background: var(--bg-primary);
+  border-radius: 16px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+/* 날짜 선택 모달 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.date-picker-modal {
+  background: var(--bg-primary);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.calendar-input {
+  margin-bottom: 24px;
+}
+
+.calendar-input input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  font-size: 16px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+.date-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.recent-dates {
+  margin-bottom: 20px;
+}
+
+.recent-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+
+.recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recent-date-btn {
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.recent-date-btn.active {
+  background: var(--primary);
+  color: white;
 }
 
 /* 하단 네비게이션 */

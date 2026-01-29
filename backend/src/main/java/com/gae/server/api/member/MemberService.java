@@ -4,6 +4,7 @@ import com.gae.server.api.member.dto.MemberResponse;
 import com.gae.server.api.member.dto.MemberUpdateRequest;
 import com.gae.server.domain.member.Member;
 import com.gae.server.domain.member.MemberRepository;
+import com.gae.server.domain.robot.RobotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final RobotRepository robotRepository;
     private final PasswordEncoder passwordEncoder;
 
     // 1. 내 정보 조회
@@ -43,6 +45,10 @@ public class MemberService {
     public void deleteMember(String email) {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("로그인 유저 정보가 없습니다."));
+
+        // 로봇 먼저 삭제
+        robotRepository.findByMemberId(member.getId())
+                .ifPresent(robotRepository::delete);
 
         memberRepository.delete(member);
     }

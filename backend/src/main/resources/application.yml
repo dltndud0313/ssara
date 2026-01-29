@@ -3,3 +3,12 @@ spring:
     name: gae-server
   profiles:
     active: dev  # 여기서 'dev'를 선택했기 때문에 자동으로 application-dev.yml을 읽습니다.
+
+# MQTT Configuration
+mqtt:
+  broker:
+    url: tcp://localhost:1883
+  client:
+    id: spring-server
+  default-topic: gae/robot
+  qos: 1

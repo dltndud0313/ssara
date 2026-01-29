@@ -34,8 +34,19 @@
         </div>
 
         <div class="input-group">
+          <label>비밀번호 확인</label>
+          <input type="password" v-model="passwordConfirm" placeholder="비밀번호를 다시 입력해 주세요" required />
+        </div>
+
+        <div class="input-group">
           <label>전화번호</label>
           <input type="tel" v-model="phoneNumber" placeholder="010-0000-0000" />
+        </div>
+
+        <div class="input-group">
+          <label>로봇 S/N</label>
+          <input type="text" v-model="serialNumber" placeholder="로봇 시리얼 넘버를 입력해 주세요" required />
+          <span class="helper">로봇 하단에 있는 시리얼 넘버를 입력해 주세요</span>
         </div>
 
         <button type="submit" class="submit-btn" :disabled="loading">
@@ -61,12 +72,19 @@ const router = useRouter();
 const name = ref('');
 const email = ref('');
 const password = ref('');
+const passwordConfirm = ref('');
 const phoneNumber = ref('');
+const serialNumber = ref('');
 const loading = ref(false);
 
 const handleSignup = async () => {
   if (password.value.length < 8) {
     alert('비밀번호는 8자 이상이어야 해요');
+    return;
+  }
+
+  if (password.value !== passwordConfirm.value) {
+    alert('비밀번호가 일치하지 않아요');
     return;
   }
 
@@ -77,7 +95,8 @@ const handleSignup = async () => {
       name: name.value,
       email: email.value,
       password: password.value,
-      phoneNumber: phoneNumber.value || null
+      phoneNumber: phoneNumber.value || null,
+      serialNumber: serialNumber.value
     });
 
     alert('회원가입이 완료되었어요! 로그인해 주세요');
