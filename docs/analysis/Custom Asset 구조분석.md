@@ -42,7 +42,8 @@
   - `effort_limit=2.5`: 토크 제한. 실제 모터 스펙 대비 여유가 있는지 확인 필요.
 
 - **🚩 개선 필요 사항**:
-  - **하드코딩된 경로**: `usd_path`가 `/workspace/IsaacLab/...`으로 하드코딩 되어 있습니다. 컨테이너 내부 경로로 보이나, 실행 환경이 바뀌면 에러가 발생할 수 있습니다. `ISAACLAB_NUCLEUS_DIR` 혹은 상대 경로 사용을 권장합니다.
+  - **하드코딩된 경로**: ~~`usd_path`가 `/workspace/IsaacLab/...`으로 하드코딩 되어 있습니다. 컨테이너 내부 경로로 보이나, 실행 환경이 바뀌면 에러가 발생할 수 있습니다. `ISAACLAB_NUCLEUS_DIR` 혹은 상대 경로 사용을 권장합니다.~~
+	  - 동적 경로 `usd_path=f"{os.path.dirname(__file__)}/spot_micro.usd"`로 변경
 
 ### 🏞️ 2. `flat_env_cfg.py` (평지 환경)
 가장 기본적인 평지 주행 학습을 위한 설정입니다.
@@ -93,6 +94,16 @@
 | **Flat** | Body 전체 (`Robot/.*`) | ❌ None | ❌ None |
 | **Rough** | Body 전체 (`Robot/.*`) | ✅ `base_link` 기준 | ✅ Height Map 포함 |
 | **Student** | **발 Only** (`.*foot.*`) | ❌ None | ❌ None (Blind) |
+
+### 📉 5. 최적화: 센서 비활성화 (No Sensor)
+성능 최적화 및 단순화된 학습(Blind Policy)을 위해 센서를 완전히 제거하는 옵션도 고려되었습니다.
+
+- **목표**: `height_scanner`와 `contact_forces`를 비활성화하여 리소스 사용을 줄이고, 순수 proprioception 기반의 학습 가능성 탐색.
+- **영향분석**:
+  - `contact_forces` 제거 시: `feet_air_time`(공중 시간), `undesired_contacts`(충돌 감지), `feet_contact_forces`(충격 감지) 보상 함수 사용 불가. `base_contact` 종료 조건 사용 불가.
+  - `height_scanner` 제거 시: 지형 정보 인식 불가 (Blind Agent).
+- **구현 계획**: 별도의 설정 파일 (`*_no_sensor.py`)로 분리하여 관리.
+
 
 ### 🛠️ 하드웨어 매핑 점검
 - **관절 이름 (Regex)**: `.*_shoulder`, `.*_leg`, `.*_foot`

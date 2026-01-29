@@ -83,3 +83,42 @@ Isaac Lab(rsl_rl)에는 별도의 수동 저장 명령어(키 입력 등)는 없
     ```
 3.  **브라우저 접속:** `http://localhost:6006`
     *   *참고: 컨테이너 실행 시 `-p 6006:6006` 옵션으로 포트가 개방되어 있어야 로컬에서 접속 가능합니다.*
+
+---
+
+## 6. Height Scanner & Contact Forces 비활성화 학습 (No Sensor)
+
+height_scanner와 contact_forces 센서를 비활성화하여 **센서 없는 학습(blind policy)**을 진행할 수 있습니다.
+
+### 변경 사항 (Proposed Changes)
+
+#### [NEW] `flat_env_cfg_no_sensor.py`
+`flat_env_cfg.py` 기반으로 contact_forces를 비활성화한 설정입니다.
+- **센서 제거**: `contact_forces = None`
+- **보상 제거**: `feet_air_time`, `undesired_contacts`, `feet_contact_forces`
+- **종료 조건 제거**: `base_contact`
+
+#### [NEW] `rough_env_cfg_no_sensor.py`
+`rough_env_cfg.py` 기반으로 height_scanner와 contact_forces를 모두 비활성화한 설정입니다.
+- **센서 제거**: `height_scanner = None`, `contact_forces = None`
+- **관측 제거**: `height_scan = None`
+- **보상 제거**: `feet_air_time`, `undesired_contacts`, `feet_contact_forces`
+- **종료 조건 제거**: `base_contact`
+
+### 검증 계획 (Verification Plan)
+
+#### 자동 테스트 (Automated Tests)
+컨테이너 내부에서 다음 명령어로 학습이 정상적으로 시작되는지 확인합니다.
+
+```bash
+docker exec -it isaac-sim /bin/bash -c "cd /isaac-sim/IsaacLab && ./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Velocity-Flat-NoSensor-Quad-v0 --num_envs=64 --max_iterations=10"
+```
+
+성공 기준:
+- 오류 없이 10 iteration 완료
+- 센서 관련 경고 없음
+
+#### 수동 검증 (Manual Verification)
+1. 학습 로그에서 `contact_forces` 또는 `height_scanner` 관련 오류가 없는지 확인
+2. 보상 값이 정상적으로 출력되는지 확인
+

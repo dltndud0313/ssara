@@ -15,6 +15,7 @@
 
 ## 환경 레지스트리 (`__init__.py`)
 다음과 같은 환경들이 등록되어 있습니다:
+
 | 환경 ID (Environment ID) | 설명 | 설정 진입점 (Config Entry Point) |
 | :--- | :--- | :--- |
 | `Isaac-Velocity-Flat-Custom-Quad-v0` | 평지 지형 학습 환경 | `CustomQuadFlatEnvCfg` |

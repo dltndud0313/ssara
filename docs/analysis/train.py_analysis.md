@@ -1,6 +1,6 @@
- Analysis of `scripts/local_train.py`
+ Analysis of  `train.py`
 
-`scripts/local_train.py` 파일은 **Isaac Lab 환경에서 RSL-RL 라이브러리를 사용하여 강화학습 모델을 학습시키기 위한 메인 실행 스크립트**입니다.
+`train.py` 파일은 **Isaac Lab 환경에서 RSL-RL 라이브러리를 사용하여 강화학습 모델을 학습시키기 위한 메인 실행 스크립트**입니다.
 
 주요 기능과 코드의 흐름을 단계별로 설명합니다.
 
