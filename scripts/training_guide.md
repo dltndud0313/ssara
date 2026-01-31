@@ -47,8 +47,13 @@
 ./isaaclab.sh -p ~/IsaacLab/scripts/reinforcement_learning/rsl_rl/play.py \
 --task=Isaac-Velocity-Flat-Custom-Quad-Play-v0 \
 --num_envs=50 \
---load_run 2026-01-28_05-01-39
+--load_run 2026-01-29_22-23-47
 ```
+
+### data
+date: 2026-01-29_22-23-47
+task: Isaac-Velocity-Flat-NoSensor-Quad-v0
+
 
 ### 주요 옵션 설명
 *   **`--task=...-Play-v0`**: 시각화 전용 환경 설정을 사용합니다. (로봇 수 감소, 충돌/리셋 조건 완화 등)
@@ -122,3 +127,5 @@ docker exec -it isaac-sim /bin/bash -c "cd /isaac-sim/IsaacLab && ./isaaclab.sh 
 1. 학습 로그에서 `contact_forces` 또는 `height_scanner` 관련 오류가 없는지 확인
 2. 보상 값이 정상적으로 출력되는지 확인
 
+로그 마운트하기
+-v $(pwd)/logs:/isaac-sim/IsaacLab/logs:rw 
