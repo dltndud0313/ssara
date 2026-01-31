@@ -35,3 +35,14 @@
 - 서포트는 SSAFY 제공 키트에 포함
 
 ## 2. Isaac Sim Simulation Parameters & Hardware Validity Analysis
+
+## 3. Enhance camera mount
+기존 카메라 마운트가 나사 1개로 지지되어 회전에 취약한 점을 해결하기 위해, 좌우 지지하는 마운트를 모델링 후 3D프린팅하여 보강.
+
+## 4. TroubleShooting
+### 어깨 관절 보강하기
+> 어깨 관절에서, 다리 전체가 `서보 모터 혼`에 의해서만 지지되어 불안정한 문제를 해결하기 위한 방법이다.
+
+베어링 구매하기
+
+### 

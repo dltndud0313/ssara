@@ -3,6 +3,8 @@ data/SpotMicro-IsaacLab/
 data/original_robot/
 data/SpotMicroJetson/
 data/example_quadruped_isaac/
+logs/
+
 to_do_list.md
 
 .agent/

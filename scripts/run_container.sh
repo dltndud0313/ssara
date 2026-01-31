@@ -11,6 +11,7 @@ docker run --name isaac-sim \
     -e "PRIVACY_CONSENT=Y" \
     -v "$HOME/.Xauthority:/isaac-sim/.Xauthority" \
     -e DISPLAY \
+    -e "ROS_DISTRO=humble" \
     -e "RMW_IMPLEMENTATION=rmw_fastrtps_cpp" \
     -e "ROS_DOMAIN_ID=0" \
     -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
@@ -22,4 +23,5 @@ docker run --name isaac-sim \
     $(: 'Bind additional Mounts') \
     -v /home/actuating/workspaces/spotmicro/data/usd:/isaac-sim/data/usd:rw \
     -v /home/actuating/workspaces/spotmicro/data/train_myrobot/config:/isaac-sim/IsaacLab/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/config:rw \
-    isaac-sim-img:latest
+    -v /home/actuating/workspaces/spotmicro/logs:/isaac-sim/IsaacLab/logs:rw \
+    isaac-sim-img
