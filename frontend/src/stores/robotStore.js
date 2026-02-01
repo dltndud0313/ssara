@@ -16,6 +16,17 @@ export const useRobotStore = defineStore('robot', () => {
     y: 0
   })
 
+  // 일일 요약 (산책시간, 이상감지 등)
+  const dailySummary = ref({
+    walkTime: 0,
+    alerts: 0,
+    distance: 0,
+    totalEvents: 0
+  })
+
+  // 최근 활동 로그
+  const activityLogs = ref([])
+
   const isConnected = ref(false)
   let stompClient = null
 
@@ -70,6 +81,42 @@ export const useRobotStore = defineStore('robot', () => {
             console.log('Pose 업데이트:', robotPose.value)
           } catch (e) {
             console.error('Pose 파싱 오류:', e)
+          }
+        })
+
+        // robot/summary 구독 (산책시간, 이상감지 등)
+        stompClient.subscribe('/topic/robot/summary', (message) => {
+          try {
+            const data = JSON.parse(message.body)
+            dailySummary.value = {
+              walkTime: data.walkTime ?? 0,
+              alerts: data.alerts ?? 0,
+              distance: data.distance ?? 0,
+              totalEvents: data.totalEvents ?? 0
+            }
+            console.log('Summary 업데이트:', dailySummary.value)
+          } catch (e) {
+            console.error('Summary 파싱 오류:', e)
+          }
+        })
+
+        // robot/activity 구독 (이상 감지 이벤트)
+        stompClient.subscribe('/topic/robot/activity', (message) => {
+          try {
+            const data = JSON.parse(message.body)
+            const log = {
+              type: data.severity === 'HIGH' ? 'warning' : 'info',
+              msg: data.message ?? '알 수 없는 이벤트',
+              time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+            }
+            activityLogs.value.unshift(log)
+            // 최대 10개 유지
+            if (activityLogs.value.length > 10) {
+              activityLogs.value.pop()
+            }
+            console.log('Activity 추가:', log)
+          } catch (e) {
+            console.error('Activity 파싱 오류:', e)
           }
         })
       },
@@ -166,6 +213,8 @@ export const useRobotStore = defineStore('robot', () => {
     // State
     robotStatus,
     robotPose,
+    dailySummary,
+    activityLogs,
     isConnected,
     // Actions
     connectWebSocket,

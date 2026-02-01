@@ -107,7 +107,7 @@
 
         <div class="activity-list">
           <div
-            v-for="(log, index) in robotState.logs.slice(0, 4)"
+            v-for="(log, index) in displayLogs"
             :key="index"
             class="activity-item"
           >
@@ -177,21 +177,44 @@ import { useRouter } from 'vue-router';
 import { robotState } from '../store.js';
 import { useAuthStore } from '../stores/authStore';
 import { useRobotStore } from '@/stores/robotStore';
+import { activityApi } from '@/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const robotStore = useRobotStore();
 
-const todaySummary = ref({
-  walkTime: 0,
-  alerts: 0
-});
+// API에서 가져온 초기 데이터
+const apiSummary = ref({ walkTime: 0, alerts: 0 });
+const apiLogs = ref([]);
+
+// 실시간 일일 요약 (API 데이터 + WebSocket 실시간 데이터)
+const todaySummary = computed(() => ({
+  walkTime: robotStore.dailySummary.walkTime || apiSummary.value.walkTime || 0,
+  alerts: robotStore.dailySummary.alerts || apiSummary.value.alerts || 0
+}));
 
 const loading = ref(true);
 
 onMounted(async () => {
   await robotState.fetchRobot();
-  // WebSocket 연결 (위치 페이지와 동일한 실시간 데이터 사용)
+  // 오늘 요약 정보 API에서 가져오기
+  try {
+    const summaryRes = await activityApi.getTodaySummary();
+    apiSummary.value = {
+      walkTime: summaryRes.data.walkTime || 0,
+      alerts: summaryRes.data.alerts || 0
+    };
+  } catch (e) {
+    console.error('요약 정보 로드 실패:', e);
+  }
+  // 오늘 활동 로그 API에서 가져오기
+  try {
+    const logsRes = await activityApi.getTodayLogs();
+    apiLogs.value = logsRes.data.slice(0, 4);
+  } catch (e) {
+    console.error('활동 로그 로드 실패:', e);
+  }
+  // WebSocket 연결 (실시간 데이터)
   robotStore.connectWebSocket();
   loading.value = false;
 });
@@ -228,6 +251,14 @@ const batteryStatusText = computed(() => {
   if (currentBattery.value <= 20) return '충전 필요';
   if (currentBattery.value <= 50) return '보통';
   return '충분';
+});
+
+// 최근 활동 로그 (WebSocket 실시간 + API에서 가져온 로그)
+const displayLogs = computed(() => {
+  const wsLogs = robotStore.activityLogs || [];
+  const dbLogs = apiLogs.value || [];
+  // WebSocket 실시간 로그 우선, 그 다음 DB 로그
+  return [...wsLogs, ...dbLogs].slice(0, 4);
 });
 
 const handleLogout = () => {
@@ -292,6 +323,7 @@ const handleLogout = () => {
 /* 메인 콘텐츠 */
 .content {
   padding: 0 20px;
+  overflow-x: hidden;
 }
 
 /* 상태 카드 */
@@ -299,8 +331,11 @@ const handleLogout = () => {
   background: var(--bg-primary);
   border-radius: 20px;
   padding: 20px;
-  margin-top: -8px;
+  margin-top: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .status-card.offline {
@@ -325,11 +360,19 @@ const handleLogout = () => {
   color: white;
 }
 
+.robot-info {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .robot-name {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .connection-status {

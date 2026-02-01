@@ -1,5 +1,7 @@
 # ROSBridge JSON 메시지 규격 (Spring Boot ↔ ROS2)
 
+
+## S/N으로 로봇개 간의 차이 파악. 
 > 작성일: 2026-01-28
 > 프로토콜: ROSBridge v2.0
 > 용도: Spring Boot 서버에서 rosbridge_server와 통신하기 위한 JSON Payload 정의

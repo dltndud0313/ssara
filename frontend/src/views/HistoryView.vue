@@ -80,20 +80,6 @@
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <div class="stat-icon distance">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
-                <path d="M2 12h20"/>
-              </svg>
-            </div>
-            <div class="stat-content">
-              <span class="stat-value">{{ selectedSummary.distance }}km</span>
-              <span class="stat-label">이동 거리</span>
-            </div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
             <div class="stat-icon events">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -219,8 +205,11 @@
 </template>
 
 <script setup>
-import { ref, computed, h, onMounted, watch } from 'vue';
+import { ref, computed, h, onMounted, onUnmounted, watch } from 'vue';
 import { activityApi } from '../api';
+import { useRobotStore } from '@/stores/robotStore';
+
+const robotStore = useRobotStore();
 
 const showFilter = ref(false);
 const showDatePicker = ref(false);
@@ -324,10 +313,17 @@ const isOldestDate = computed(() => {
   return selectedDate.value <= minSelectableDate.value;
 });
 
-// 필터링된 로그
+// 필터링된 로그 (오늘이면 WebSocket 로그 포함)
 const filteredLogs = computed(() => {
-  if (selectedFilter.value === 'all') return selectedLogs.value;
-  return selectedLogs.value.filter(log => log.type === selectedFilter.value);
+  let logs = selectedLogs.value;
+
+  // 오늘이면 WebSocket에서 받은 실시간 로그도 포함
+  if (isToday.value && robotStore.activityLogs.length > 0) {
+    logs = [...robotStore.activityLogs, ...logs];
+  }
+
+  if (selectedFilter.value === 'all') return logs;
+  return logs.filter(log => log.type === selectedFilter.value);
 });
 
 // 날짜 비교 함수
@@ -459,14 +455,25 @@ const fetchActivityData = async () => {
 
     selectedLogs.value = logsResponse.data;
 
-    // 요약 정보 계산
+    // 요약 정보: 오늘이면 실시간 WebSocket 데이터, 아니면 API 로그 기반 계산
     const logs = logsResponse.data;
-    selectedSummary.value = {
-      totalEvents: logs.length,
-      walkTime: Math.floor(Math.random() * 60), // 실제로는 서버에서 계산
-      distance: (Math.random() * 2).toFixed(1),
-      alerts: logs.filter(l => l.type === 'warning').length
-    };
+    if (isToday.value && robotStore.dailySummary.walkTime > 0) {
+      // 오늘: WebSocket 실시간 데이터 사용
+      selectedSummary.value = {
+        totalEvents: robotStore.dailySummary.totalEvents || logs.length,
+        walkTime: robotStore.dailySummary.walkTime,
+        distance: robotStore.dailySummary.distance || 0,
+        alerts: robotStore.dailySummary.alerts
+      };
+    } else {
+      // 과거: API 로그 기반 계산
+      selectedSummary.value = {
+        totalEvents: logs.length,
+        walkTime: logs.filter(l => l.type === 'action').length * 5,
+        distance: (logs.length * 0.1).toFixed(1),
+        alerts: logs.filter(l => l.type === 'warning').length
+      };
+    }
   } catch (error) {
     console.error('활동 기록 조회 실패:', error);
     selectedLogs.value = [];
@@ -480,8 +487,25 @@ watch(selectedDate, () => {
   fetchActivityData();
 });
 
+// WebSocket에서 실시간 요약 데이터 받으면 업데이트 (오늘만)
+watch(() => robotStore.dailySummary, (newSummary) => {
+  if (isToday.value && newSummary.walkTime > 0) {
+    selectedSummary.value = {
+      ...selectedSummary.value,
+      walkTime: newSummary.walkTime,
+      alerts: newSummary.alerts,
+      totalEvents: newSummary.totalEvents || selectedSummary.value.totalEvents
+    };
+  }
+}, { deep: true });
+
 onMounted(() => {
+  robotStore.connectWebSocket();
   fetchActivityData();
+});
+
+onUnmounted(() => {
+  robotStore.disconnectWebSocket();
 });
 
 // 아이콘 컴포넌트

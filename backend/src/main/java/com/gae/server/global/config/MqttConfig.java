@@ -39,7 +39,9 @@ public class MqttConfig {
     private static final String[] SUBSCRIBE_TOPICS = {
             "robot/status",
             "robot/pose",
-            "robot/map"
+            "robot/map",
+            "robot/activity",
+            "robot/summary"
     };
 
     @Bean
