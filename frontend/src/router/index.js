@@ -6,6 +6,8 @@ import SignupView from '../views/SignupView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import LocationView from '../views/LocationView.vue'
 import HistoryView from '../views/HistoryView.vue'
+import NoticesView from '../views/NoticesView.vue'
+import InquiriesView from '../views/InquiriesView.vue'
 
 const routes = [
   {
@@ -41,6 +43,18 @@ const routes = [
     name: 'History',
     component: HistoryView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/notices',
+    name: 'Notices',
+    component: NoticesView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inquiries',
+    name: 'Inquiries',
+    component: InquiriesView,
+    meta: { requiresAuth: true }
   }
 ]
 
@@ -51,7 +65,8 @@ const router = createRouter({
 
 // 네비게이션 가드: 인증 필요한 페이지 보호
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('accessToken')
+  // localStorage 또는 sessionStorage에서 토큰 확인
+  const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
 
   if (to.meta.requiresAuth && !token) {
     // 인증 필요한 페이지인데 토큰 없으면 로그인으로

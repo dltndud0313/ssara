@@ -11,8 +11,8 @@
             <line x1="15" y1="9" x2="15.01" y2="9"/>
           </svg>
         </div>
-        <h1 class="app-name">개가제</h1>
-        <p class="app-desc">소중한 가족을 위한 스마트 돌봄</p>
+        <h1 class="app-name">파트라슈 봇</h1>
+        <p class="app-desc">소중한 가족을 위한 스마트 강아지</p>
       </div>
 
       <!-- 폼 영역 -->
@@ -55,7 +55,11 @@
             <span class="checkmark"></span>
             <span class="checkbox-label">로그인 유지</span>
           </label>
-          <button type="button" class="text-btn">비밀번호 찾기</button>
+          <div class="find-btns">
+            <button type="button" class="text-btn" @click="openFindEmailModal">아이디 찾기</button>
+            <span class="divider">|</span>
+            <button type="button" class="text-btn" @click="openResetPasswordModal">비밀번호 찾기</button>
+          </div>
         </div>
 
         <button type="submit" class="submit-btn" :disabled="loading">
@@ -69,6 +73,115 @@
         <button class="signup-btn" @click="$router.push('/signup')">회원가입</button>
       </div>
     </div>
+
+    <!-- 아이디 찾기 모달 -->
+    <div v-if="showFindEmailModal" class="modal-overlay" @click.self="closeFindEmailModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>아이디 찾기</h2>
+          <button class="close-btn" @click="closeFindEmailModal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 입력 폼 -->
+        <div v-if="!foundEmail" class="modal-body">
+          <p class="modal-desc">가입 시 입력한 이름과 전화번호를 입력해 주세요.</p>
+
+          <div class="input-group">
+            <label>이름</label>
+            <input
+              type="text"
+              v-model="findName"
+              placeholder="이름을 입력해 주세요"
+            />
+          </div>
+
+          <div class="input-group">
+            <label>전화번호</label>
+            <input
+              type="tel"
+              v-model="findPhone"
+              placeholder="010-0000-0000"
+            />
+          </div>
+
+          <button
+            class="modal-btn"
+            @click="handleFindEmail"
+            :disabled="findLoading"
+          >
+            {{ findLoading ? '찾는 중...' : '아이디 찾기' }}
+          </button>
+        </div>
+
+        <!-- 결과 화면 -->
+        <div v-else class="modal-body result">
+          <div class="result-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <p class="result-text">가입된 이메일을 찾았어요!</p>
+          <p class="result-email">{{ foundEmail }}</p>
+          <button class="modal-btn" @click="closeFindEmailModal">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 비밀번호 찾기 모달 -->
+    <div v-if="showResetPasswordModal" class="modal-overlay" @click.self="closeResetPasswordModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>비밀번호 찾기</h2>
+          <button class="close-btn" @click="closeResetPasswordModal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 입력 폼 -->
+        <div v-if="!resetSuccess" class="modal-body">
+          <p class="modal-desc">가입한 이메일을 입력하시면 임시 비밀번호를 보내드려요.</p>
+
+          <div class="input-group">
+            <label>이메일</label>
+            <input
+              type="email"
+              v-model="resetEmail"
+              placeholder="이메일을 입력해 주세요"
+            />
+          </div>
+
+          <button
+            class="modal-btn"
+            @click="handleSendTempPassword"
+            :disabled="resetLoading"
+          >
+            {{ resetLoading ? '발송 중...' : '임시 비밀번호 받기' }}
+          </button>
+        </div>
+
+        <!-- 성공 화면 -->
+        <div v-else class="modal-body result">
+          <div class="result-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <p class="result-text">임시 비밀번호를 발송했어요!</p>
+          <p class="result-sub">이메일을 확인해 주세요.</p>
+          <button class="modal-btn" @click="closeResetPasswordModal">확인</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -76,14 +189,29 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { authApi } from '../api';
+import { useAuthStore } from '../stores/authStore';
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const email = ref('');
 const password = ref('');
 const rememberMe = ref(false);
 const showPassword = ref(false);
 const loading = ref(false);
+
+// 아이디 찾기 관련
+const showFindEmailModal = ref(false);
+const findName = ref('');
+const findPhone = ref('');
+const findLoading = ref(false);
+const foundEmail = ref('');
+
+// 비밀번호 찾기 관련
+const showResetPasswordModal = ref(false);
+const resetEmail = ref('');
+const resetLoading = ref(false);
+const resetSuccess = ref(false);
 
 const handleLogin = async () => {
   if (!email.value || !password.value) {
@@ -100,7 +228,10 @@ const handleLogin = async () => {
     });
 
     const { accessToken } = response.data;
-    localStorage.setItem('accessToken', accessToken);
+
+    // authStore를 통해 토큰 저장 (rememberMe에 따라 스토리지 선택)
+    authStore.login(accessToken, rememberMe.value);
+
     router.push('/home');
   } catch (error) {
     console.error('로그인 실패:', error);
@@ -111,6 +242,91 @@ const handleLogin = async () => {
     }
   } finally {
     loading.value = false;
+  }
+};
+
+// 아이디 찾기 모달 열기
+const openFindEmailModal = () => {
+  showFindEmailModal.value = true;
+  findName.value = '';
+  findPhone.value = '';
+  foundEmail.value = '';
+};
+
+// 아이디 찾기 모달 닫기
+const closeFindEmailModal = () => {
+  showFindEmailModal.value = false;
+  findName.value = '';
+  findPhone.value = '';
+  foundEmail.value = '';
+};
+
+// 아이디 찾기 요청
+const handleFindEmail = async () => {
+  if (!findName.value || !findPhone.value) {
+    alert('이름과 전화번호를 모두 입력해 주세요');
+    return;
+  }
+
+  findLoading.value = true;
+
+  try {
+    const response = await authApi.findEmail({
+      name: findName.value,
+      phoneNumber: findPhone.value
+    });
+
+    foundEmail.value = response.data.email;
+  } catch (error) {
+    console.error('아이디 찾기 실패:', error);
+    if (error.response?.status === 500) {
+      alert('일치하는 회원 정보가 없어요');
+    } else {
+      alert('아이디 찾기에 실패했어요. 잠시 후 다시 시도해 주세요');
+    }
+  } finally {
+    findLoading.value = false;
+  }
+};
+
+// 비밀번호 찾기 모달 열기
+const openResetPasswordModal = () => {
+  showResetPasswordModal.value = true;
+  resetEmail.value = '';
+  resetSuccess.value = false;
+};
+
+// 비밀번호 찾기 모달 닫기
+const closeResetPasswordModal = () => {
+  showResetPasswordModal.value = false;
+  resetEmail.value = '';
+  resetSuccess.value = false;
+};
+
+// 임시 비밀번호 발송 요청
+const handleSendTempPassword = async () => {
+  if (!resetEmail.value) {
+    alert('이메일을 입력해 주세요');
+    return;
+  }
+
+  resetLoading.value = true;
+
+  try {
+    await authApi.sendTempPassword({
+      email: resetEmail.value
+    });
+
+    resetSuccess.value = true;
+  } catch (error) {
+    console.error('임시 비밀번호 발송 실패:', error);
+    if (error.response?.status === 500) {
+      alert('가입되지 않은 이메일이에요');
+    } else {
+      alert('임시 비밀번호 발송에 실패했어요. 잠시 후 다시 시도해 주세요');
+    }
+  } finally {
+    resetLoading.value = false;
   }
 };
 </script>
@@ -273,6 +489,17 @@ const handleLogin = async () => {
   color: var(--text-tertiary);
 }
 
+.find-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.divider {
+  color: var(--text-disabled);
+  font-size: 12px;
+}
+
 /* 제출 버튼 */
 .submit-btn {
   width: 100%;
@@ -312,5 +539,102 @@ const handleLogin = async () => {
   font-size: 14px;
   font-weight: 600;
   color: var(--primary);
+}
+
+/* 모달 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modal {
+  background: var(--bg-primary);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 0;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  padding: 4px;
+  color: var(--text-tertiary);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.modal-btn {
+  width: 100%;
+  height: 50px;
+  background: var(--primary);
+  color: white;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+}
+
+/* 결과 화면 */
+.modal-body.result {
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.result-icon {
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+
+.result-text {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.result-email {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+}
+
+.result-sub {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-bottom: 24px;
 }
 </style>

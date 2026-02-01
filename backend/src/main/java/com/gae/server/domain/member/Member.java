@@ -32,6 +32,9 @@ public class Member {
 
     private String phoneNumber;
 
+    @Column(nullable = false, unique = true)
+    private String serialNumber;
+
     private String role = "ROLE_USER";
 
     @CreatedDate
@@ -39,11 +42,12 @@ public class Member {
     private LocalDateTime createdAt;
 
     @Builder
-    public Member(String email, String password, String name, String phoneNumber) {
+    public Member(String email, String password, String name, String phoneNumber, String serialNumber) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.phoneNumber = phoneNumber;
+        this.serialNumber = serialNumber;
     }
 
 
