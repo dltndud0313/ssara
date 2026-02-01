@@ -17,3 +17,29 @@ nul
 # 환경 설정
 *.env
 .env.*
+
+
+# --- VS Code 관련 (개인 설정 및 DB 파일) ---
+.vscode/
+*.code-workspace
+*.db
+*.db-shm
+*.db-wal
+.history/
+
+# --- ROS2 빌드 결과물 (절대 올리면 안 됨!) ---
+build/
+install/
+log/
+*/build/
+*/install/
+*/log/
+
+# --- 파이썬/컴파일 임시 파일 ---
+__pycache__/
+*.py[cod]
+
+# --- 기타 잡동사니 ---
+.DS_Store
+*.mp3
+*.wav
