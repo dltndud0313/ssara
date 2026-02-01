@@ -14,6 +14,8 @@ docker run --name isaac-sim \
     -e "ROS_DISTRO=humble" \
     -e "RMW_IMPLEMENTATION=rmw_fastrtps_cpp" \
     -e "ROS_DOMAIN_ID=0" \
+    -v /etc/localtime:/etc/localtime:ro \
+    -v /etc/timezone:/etc/timezone:ro \
     -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
     -v ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw \
     -v ~/docker/isaac-sim/logs:/isaac-sim/.nvidia-omniverse/logs:rw \

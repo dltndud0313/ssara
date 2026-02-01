@@ -1,131 +1,227 @@
-# SpotMicro 학습 관리 및 시각화 가이드
+# Isaac Lab 강화학습 (RL) 실전 가이드
 
-이 문서는 SpotMicro 강화학습(RSL-RL) 프로세스를 제어하고 결과를 확인하는 방법을 설명합니다.
+이 문서는 **Isaac Lab** 환경에서 강화학습을 수행하는 전반적인 절차를 설명합니다. 프로젝트 설정(Config), 학습(Training), 모니터링(Monitoring), 그리고 결과 검증(Play)까지의 전체 워크플로우를 다룹니다.
 
-## 1. 학습 종료 (Stop Training)
-학습을 안전하게 중단하려면 터미널에서 다음 키를 입력하십시오:
-
-> **`Ctrl + C`**
-
-*   시스템은 현재까지의 **학습 체크포인트(Model Checkpoint)**와 로그를 저장한 후 종료합니다.
-*   종료 시 터미널 로그에 `Saving model to...` 메시지가 표시되는지 확인하십시오.
+본 가이드는 **SpotMicro** 프로젝트를 예시로 사용하지만, 내용은 Isaac Lab을 사용하는 모든 프로젝트에 범용적으로 적용될 수 있습니다.
 
 ---
 
-## 2. 학습 이어하기 (Resume Training)
-중단된 학습을 이어서 진행하려면, 기존 `train.py` 실행 명령어에 `--resume` 옵션을 추가합니다.
+## 1. 강화학습 워크플로우 (Workflow Overview)
 
-### 기본 사용법 (최신 기록 불러오기)
-가장 최근에 실행된 학습 기록을 자동으로 불러옵니다.
+Isaac Lab의 강화학습 프로세스는 크게 4단계로 나뉩니다.
+
+1.  **환경 설정 (Configuration):** 로봇, 지형, 센서, 보상 함수 등을 정의 (`env_cfg.py`, `rsl_rl_ppo_cfg.py`).
+2.  **학습 (Training):** 정의된 환경에서 에이전트(로봇)를 학습시킴 (`train.py`).
+3.  **모니터링 (Monitoring):** 학습 진행 상황을 그래프로 분석 (`Tensorboard`).
+4.  **검증 및 시각화 (Play/Vis):** 학습된 정책(Policy)을 시뮬레이터에서 시각적으로 확인 (`play.py`).
+
+---
+
+## 2. 학습 수행 (Training)
+
+학습은 `scripts/reinforcement_learning/rsl_rl/train.py` 스크립트를 통해 실행됩니다.
+
+### 2.1 기본 실행 명령어
+가장 기본적인 학습 실행 방법입니다.
 
 ```bash
-./isaaclab.sh -p ~/IsaacLab/scripts/reinforcement_learning/rsl_rl/train.py \
---task=Isaac-Velocity-Flat-Custom-Quad-v0 \
---num_envs=512 \
---resume
+# Isaac Lab 디렉토리로 이동 (컨테이너 내부)
+cd ~/IsaacLab
+
+# 학습 실행
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py \
+    --task=Isaac-Velocity-Flat-NoSensor-Spot-Micro-v0 \
+    --num_envs=4096 \
+    --headless
 ```
 
-### 특정 기록 불러오기 (`--load_run`)
-특정 날짜/시간의 학습 모델을 지정하여 불러옵니다. 폴더 이름은 `logs/rsl_rl/custom_quad_flat/` 아래의 날짜 폴더명입니다.
+*   **`--task`**: 실행할 Task ID (예: `Isaac-Velocity-Flat-NoSensor-Spot-Micro-v0`). `gym.register`로 등록된 ID여야 합니다.
+*   **`--num_envs`**: 병렬로 실행할 환경의 개수입니다. GPU 메모리에 따라 조절합니다 (예: 2048, 4096).
+*   **`--headless`**: GUI 없이 백그라운드에서 실행합니다. 학습 속도가 훨씬 빠르므로 **학습 시에는 필수 권장**됩니다.
+
+### 2.2 쉘 스크립트 활용
+매번 긴 명령어를 입력하는 대신, 미리 정의된 쉘 스크립트를 사용하면 편리합니다.
+
+**예시: `scripts/train_unsensored_flat.sh`**
+```bash
+#!/bin/bash
+docker exec -it isaac-sim bash -c 'cd ~/IsaacLab && \
+    ./isaaclab.sh \
+    -p scripts/reinforcement_learning/rsl_rl/train.py \
+    --task=Isaac-Velocity-Flat-NoSensor-Spot-Micro-v0 \
+    --num_envs=30000 \
+    --headless'
+```
+*   호스트에서 이 스크립트를 실행하면 즉시 컨테이너 내부에서 학습이 시작됩니다.
+
+### 2.3 학습 재개 (Resuming Training)
+중단된 학습을 이어서 하거나, 특정 체크포인트에서 다시 시작하려면 다음 옵션을 사용합니다.
+
+*   **`--resume`**: 가장 최근(last) 로그 폴더의 모델을 불러와서 이어서 학습합니다.
+*   **`--load_run [폴더명]`**: 특정 날짜/시간의 학습 기록을 지정하여 불러옵니다.
 
 ```bash
-# 예시: 2026-01-28_05-01-39 기록에서 이어하기
-./isaaclab.sh -p ~/IsaacLab/scripts/reinforcement_learning/rsl_rl/train.py \
---task=Isaac-Velocity-Flat-Custom-Quad-v0 \
---num_envs=512 \
---resume \
---load_run 2026-01-28_05-01-39
+# 최신 기록에서 이어서 학습
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py \
+    --task=Isaac-Velocity-Flat-NoSensor-Spot-Micro-v0 \
+    --num_envs=4096 \
+    --resume
+
+# 특정 날짜의 기록 로드 (logs/rsl_rl/[experiment_name]/[date_folder])
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py \
+    --task=Isaac-Velocity-Flat-NoSensor-Spot-Micro-v0 \
+    --num_envs=4096 \
+    --resume \
+    --load_run 2024-01-31_12-00-00
 ```
 
 ---
 
-## 3. GUI로 확인하기 (Play / Visulaization)
-`play.py` 스크립트를 사용하여 학습된 정책(Policy)이 실제로 로봇을 어떻게 제어하는지 시각적으로 확인할 수 있습니다.
+## 3. 모니터링 (Monitoring)
 
-### 실행 명령어
-```bash
-./isaaclab.sh -p ~/IsaacLab/scripts/reinforcement_learning/rsl_rl/play.py \
---task=Isaac-Velocity-Flat-Custom-Quad-Play-v0 \
---num_envs=50 \
---load_run 2026-01-29_22-23-47
-```
+학습이 잘 되고 있는지 확인하기 위해 **Tensorboard**를 사용합니다.
 
-### data
-date: 2026-01-29_22-23-47
-task: Isaac-Velocity-Flat-NoSensor-Quad-v0
+### 3.1 로그 위치 확인
+로그는 기본적으로 다음 경로에 저장됩니다. (호스트와 마운트된 경로 확인 필요)
 
+*   **컨테이너 내부:** `/isaac-sim/IsaacLab/logs/rsl_rl/[Experiment_Name]/[Date_Time]`
+*   **호스트 (SpotMicro 예시):** `~/workspaces/spotmicro/logs/rsl_rl/[Experiment_Name]/[Date_Time]`
 
-### 주요 옵션 설명
-*   **`--task=...-Play-v0`**: 시각화 전용 환경 설정을 사용합니다. (로봇 수 감소, 충돌/리셋 조건 완화 등)
-*   **`--num_envs=50`**: 시각화 창에 띄울 로봇의 개수입니다. 너무 많으면 렌더링이 느려질 수 있습니다.
-*   **`--load_run [폴더명]`**: 확인하고 싶은 학습 결과 폴더를 지정합니다. (지정하지 않으면 최신 폴더 사용)
-
----
-
-## 4. 모델 저장 (Model Saving)
-Isaac Lab(rsl_rl)에는 별도의 수동 저장 명령어(키 입력 등)는 없으며, **자동 저장** 시스템을 사용합니다.
-
-### 저장 시점
-1.  **자동 저장:** 설정된 주기(`save_interval`)마다 자동으로 체크포인트를 저장합니다.
-    *   현재 설정: **50 Iteration** 마다 저장됨 (`config/spot_micro/agents/rsl_rl_ppo_cfg.py`)
-2.  **종료 시 저장:** `Ctrl + C`를 눌러 학습을 중단하면, 즉시 현재 상태를 저장하고 종료합니다.
-
-### 저장 위치
-*   `logs/rsl_rl/custom_quad_flat/[날짜_시간]/model_*.pt` 파일로 저장됩니다.
-
----
-
-## 5. 학습 그래프 확인 (Tensorboard)
-학습 진행 상황(보상 변화, 승률 등)을 그래프로 확인하려면 Tensorboard를 사용합니다.
-
-1.  **컨테이너 접속:**
-    ```bash
-    docker exec -it isaac-sim bash
-    ```
-2.  **Tensorboard 실행:**
-    ```bash
-    tensorboard --logdir /isaac-sim/IsaacLab/logs/rsl_rl --port 6006
-    ```
-3.  **브라우저 접속:** `http://localhost:6006`
-    *   *참고: 컨테이너 실행 시 `-p 6006:6006` 옵션으로 포트가 개방되어 있어야 로컬에서 접속 가능합니다.*
-
----
-
-## 6. Height Scanner & Contact Forces 비활성화 학습 (No Sensor)
-
-height_scanner와 contact_forces 센서를 비활성화하여 **센서 없는 학습(blind policy)**을 진행할 수 있습니다.
-
-### 변경 사항 (Proposed Changes)
-
-#### [NEW] `flat_env_cfg_no_sensor.py`
-`flat_env_cfg.py` 기반으로 contact_forces를 비활성화한 설정입니다.
-- **센서 제거**: `contact_forces = None`
-- **보상 제거**: `feet_air_time`, `undesired_contacts`, `feet_contact_forces`
-- **종료 조건 제거**: `base_contact`
-
-#### [NEW] `rough_env_cfg_no_sensor.py`
-`rough_env_cfg.py` 기반으로 height_scanner와 contact_forces를 모두 비활성화한 설정입니다.
-- **센서 제거**: `height_scanner = None`, `contact_forces = None`
-- **관측 제거**: `height_scan = None`
-- **보상 제거**: `feet_air_time`, `undesired_contacts`, `feet_contact_forces`
-- **종료 조건 제거**: `base_contact`
-
-### 검증 계획 (Verification Plan)
-
-#### 자동 테스트 (Automated Tests)
-컨테이너 내부에서 다음 명령어로 학습이 정상적으로 시작되는지 확인합니다.
+### 3.2 Tensorboard 실행
+컨테이너 내부에서 실행하는 것을 권장합니다.
 
 ```bash
-docker exec -it isaac-sim /bin/bash -c "cd /isaac-sim/IsaacLab && ./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Velocity-Flat-NoSensor-Quad-v0 --num_envs=64 --max_iterations=10"
+# 컨테이너 접속
+docker exec -it isaac-sim bash
+
+# Isaac Lab 디렉토리로 이동
+cd ~/IsaacLab
+
+# Tensorboard 실행
+./isaaclab.sh -p -m tensorboard.main --logdir logs/rsl_rl --port 6006 --bind_all
 ```
 
-성공 기준:
-- 오류 없이 10 iteration 완료
-- 센서 관련 경고 없음
+*   **접속 주소:** 웹 브라우저에서 `http://localhost:6006` 접속.
+*   **주요 지표:**
+    *   `Episode/reward`: 에피소드 당 총 보상 (우상향해야 함).
+    *   `Episode/length`: 에피소드 길이 (오래 버틸수록 증가).
+    *   `Loss/value_function`: Critic Loss (0으로 수렴하면 좋음).
 
-#### 수동 검증 (Manual Verification)
-1. 학습 로그에서 `contact_forces` 또는 `height_scanner` 관련 오류가 없는지 확인
-2. 보상 값이 정상적으로 출력되는지 확인
+---
 
-로그 마운트하기
--v $(pwd)/logs:/isaac-sim/IsaacLab/logs:rw 
+## 4. 검증 및 시각화 (Play / Visualization)
+
+Headless로 학습된 모델이 실제로 어떻게 행동하는지 눈으로 확인하는 단계입니다.
+
+### 4.1 기본 시각화 실행 (`play.py`)
+
+```bash
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py \
+    --task=Isaac-Velocity-Flat-NoSensor-Spot-Micro-Play-v0 \
+    --num_envs=50 \
+    --load_run 2024-01-31_12-00-00
+```
+
+*   **`--task`**: 보통 시각화용 Task (예: `...-Play-v0`)를 따로 둡니다. 이는 환경 리셋 조건을 완화하거나 로봇 개수를 줄인 버전입니다.
+*   **`--num_envs`**: 시각화할 로봇의 마리 수 (GUI 부하를 줄이기 위해 50~100 정도 권장).
+*   **`--load_run`**: 생략 시 가장 최신(last) 모델을 불러옵니다.
+
+### 4.2 영상 녹화 (Recording)
+결과 영상을 저장하려면 `--video` 옵션을 사용합니다.
+
+```bash
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py \
+    --task=... \
+    --video \
+    --video_length 200
+```
+*   영상은 `logs/rsl_rl/.../videos` 폴더에 `.mp4` 형식으로 저장됩니다.
+
+### 4.3 키보드 조작 (Keyboard Interaction)
+시뮬레이터 창이 활성화된 상태에서 키보드로 로봇에게 명령을 내리거나 방해를 줄 수 있습니다. (설정에 따라 다름)
+*   일반적으로 `play.py` 실행 시 터미널에 조작 키 가이드가 출력됩니다.
+*   예: 화살표 키(이동), `R`(리셋) 등.
+
+---
+
+## 5. 고급 설정 (Advanced Configuration)
+
+더 나은 성능을 위해 환경과 알고리즘을 튜닝합니다.
+
+### 5.1 환경 설정 (`env_cfg.py`)
+*   **Reward (보상):** 로봇이 무엇을 잘했을 때 점수를 줄지 정의합니다.
+    *   `lin_vel_z`: 수직 움직임 최소화 (떨림 방지).
+    *   `ang_vel_xy`: 몸체 기울기 최소화.
+    *   `feet_air_time`: 발이 공중에 떠있는 시간 (자연스러운 보행 유도).
+*   **Observations (관측):** 로봇이 센서를 통해 무엇을 "보는지" 결정합니다.
+    *   `base_lin_vel`, `base_ang_vel`, `projected_gravity`, `joint_pos`, `joint_vel` 등.
+*   **Actions (행동):** 로봇 제어 방식 (위치 제어, 토크 제어 등).
+
+### 5.2 알고리즘 설정 (`rsl_rl_ppo_cfg.py`)
+`rsl_rl` 라이브러리의 PPO 알고리즘 하이퍼파라미터를 수정합니다.
+*   `num_steps_per_env`: 한 번의 업데이트에 사용할 데이터 길이 (Step 수).
+*   `learning_rate`: 학습률.
+*   `max_iterations`: 총 학습 반복 횟수.
+*   `actor_hidden_dims` / `critic_hidden_dims`: 신경망 크기 (예: [512, 256, 128]).
+
+### 5.3 커리큘럼 학습 (Curriculum Learning)
+처음에는 쉬운 환경에서 시작해서 점차 어려운 환경으로 난이도를 올립니다.
+*   **Terrain Curriculum:** 평지 -> 약간 거친 지형 -> 매우 거친 지형.
+*   `terrain.curvature`나 `terrain.difficulty` 파라미터를 조절하여 설정합니다.
+
+---
+
+## 6. 모델 내보내기 (Exporting)
+
+학습된 정책(`model_*.pt`)은 Isaac Lab 내부에서만 쓰이는 PyTorch 모델입니다. 이를 실제 로봇이나 다른 시뮬레이터에서 쓰기 위해 ONNX로 변환할 수 있습니다.
+
+```bash
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/export.py \
+    --task=Isaac-Velocity-Flat-NoSensor-Spot-Micro-v0 \
+    --load_run ...
+```
+*   변환된 `.onnx` 파일은 inference 속도가 빠르고 의존성이 적어 배포에 유리합니다.
+
+---
+
+## 7. 튜닝 히스토리 (Tuning History)
+
+학습 성능 개선을 위한 하이퍼파라미터 및 보상 조정 기록입니다.
+
+### 2026-02-01: Phase 1 보상 가중치 조정
+
+**대상 파일:** `config/spot_micro/flat_env_cfg_no_sensor.py`
+
+**분석 근거 (TensorBoard):**
+- `error_vel_xy`: 0.71 수준에서 정체 → 속도 추종 개선 필요
+- `action_rate_l2`: 4k 스텝 이후 고착화 → 유연성 부족
+- `Time_out`: 1.0 (에피소드 완주는 성공)
+
+**변경 사항:**
+
+| 보상 항목                  | 변경 전  | 변경 후   | 목적           |
+| ---------------------- | ----- | ------ | ------------ |
+| `track_lin_vel_xy_exp` | 5.0   | 7.0    | 속도 추종 강화     |
+| `flat_orientation_l2`  | -1.0  | -0.5   | 자세 페널티 완화    |
+| `action_rate_l2`       | -0.01 | -0.005 | 액션 변화 페널티 완화 |
+
+**백업:** `flat_env_cfg_no_sensor_backup.py`
+
+**다음 단계:**
+- 10k 스텝 학습 후 TensorBoard 재분석
+- 개선 없을 시 Phase 2 (PPO 하이퍼파라미터) 적용 예정
+
+### 2026-02-01: Base Contact Termination 활성화 (Blind Reset)
+
+**목적:**
+로봇이 "넘어짐(Falling)"을 인식하여 에피소드를 리셋함으로써, 비정상적인 자세(기어다니기 등)로 보상을 받는 것을 방지합니다.
+단, "센서 없는(No Sensor)" 컨셉을 유지하기 위해 Contact 정보는 정책(Policy)에는 입력되지 않습니다.
+
+**구현 내용:**
+- **File:** `config/spot_micro/flat_env_cfg_no_sensor.py`
+- `scene.contact_forces`: 물리 엔진의 접촉 계산 활성화 (Policy Obs에는 미포함).
+- `terminations.base_contact`: 몸체가 닿으면 에피소드 종료 조건 활성화.
+
+**기대 효과:**
+- 잘못된 자세로 버티기(Survival hacking) 방지.
+- 올바른 보행 자세(발로만 지지) 유도.

@@ -13,7 +13,7 @@ class CustomQuadRoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     max_iterations = 40000 #1500
     save_interval = 50
-    experiment_name = "custom_quad_rough"
+    experiment_name = "spot_micro_rough"
     empirical_normalization = False
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
@@ -43,6 +43,6 @@ class CustomQuadFlatPPORunnerCfg(CustomQuadRoughPPORunnerCfg):
         super().__post_init__()
 
         self.max_iterations = 40000
-        self.experiment_name = "custom_quad_flat"
+        self.experiment_name = "spot_micro_flat"
         self.policy.actor_hidden_dims = [512, 256, 128] # [128, 128, 128]
         self.policy.critic_hidden_dims = [512, 256, 128] # [128, 128, 128]

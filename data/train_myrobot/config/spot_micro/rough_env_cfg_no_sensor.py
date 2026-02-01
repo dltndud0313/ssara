@@ -85,3 +85,13 @@ class SpotMicroRoughNoSensorEnvCfg(SpotMicroRoughEnvCfg):
         # --- 종료 조건 비활성화 ---
         # 몸체 접촉 종료 조건 제거 (Contact Sensor 의존)
         self.terminations.base_contact = None
+
+@configclass
+class SpotMicroRoughNoSensorEnvCfg_PLAY(SpotMicroRoughNoSensorEnvCfg):
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        self.observations.policy.enable_corruption = False
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
