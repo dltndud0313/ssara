@@ -1,4 +1,4 @@
-# 🐕 GAE Robot 통합 개발 환경 가이드 (v1.3)
+# 🐕 GAE Robot 통합 개발 환경 가이드 (v1.7)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -17,7 +17,16 @@
 
 ```bash
 cd ~/gae_ws
+
 ./run_gae.sh
+
+colcon build --symlink-install
+
+# build 에러 뜨면 아래 실행 후 다시 colcon build
+# rm -rf build install log
+# colcon build --symlink-install
+
+source install/setup.bash
 ```
 
 ### 2. 빌드 (Container 내부)
@@ -32,9 +41,9 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
 ```
 
-## 3. 설치된 환경 요약 (v1.3)
+## 3. 설치된 환경 요약 (v1.7)
 
-이미지(`gae-system:v1.3`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+이미지(`gae-system:v1.7`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
@@ -54,14 +63,30 @@ source install/setup.bash
 | **TorchVision** | 0.17.2 | 이미지 처리용 라이브러리 (PyTorch 연동) |
 | **Torch2TRT** | 0.5.0 | **⭐ 중요:** PyTorch 모델을 TensorRT로 변환해주는 툴. (추론 속도 3~5배 향상 가능) |
 | **Ultralytics** | **8.4.9** | **YOLOv8** 공식 라이브러리. (객체 인식 구현 시 사용) |
+| **faster-whisper** | **1.2.1** | **OpenAI Whisper**의 고속 추론 버전. (CTranslate2 기반 최적화) |
+| **NumPy** | **1.26.4** | **⚠️ 중요:** PyTorch/OpenCV 호환성을 위해 **2.0 미만**으로 고정됨. |
 - **비전 및 센서 (Vision & Sensors)**
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
 | **OpenCV** | **4.13.0** | **CUDA 가속 빌드.** (CPU 버전보다 이미지 처리 속도 월등히 빠름) |
 | **astra_camera** | (Source) | **Orbbec Astra Pro 드라이버.** (`libuvc` 패치 적용하여 소스 빌드됨) |
+| **camera_info_manager** | (Binary) | 카메라 캘리브레이션(.yaml) 로더.
+**해상도 변경 시 필수.** |
 | **rtabmap_ros** | (Binary) | RGB-D 카메라 기반 **VSLAM** 패키지 |
 | **astra_camera_msgs** | (Source) | Astra 카메라 전용 메시지 타입 정의 |
+
+- **음성 및 오디오 (Voice & Audio)**
+
+| **패키지명** | **버전** | **설명 및 특이사항** |
+| --- | --- | --- |
+| **SpeechRecognition** | **3.14.5** | 오디오 입력 및 음성 인식 전처리 라이브러리 |
+| **PyAudio** | **0.2.11** | 마이크 하드웨어 제어 및 입출력 담당 (PortAudio 기반) |
+| **gTTS** | **2.5.4** | **Google Text-to-Speech.** 텍스트를 음성(mp3)으로 변환하는 라이브러리. |
+| **pulseaudio-utils** | 15.99.1 | **시스템 오디오 도구.** `pactl` 명령어로 마이크/스피커 ID 확인 가능. |
+| **SoX** | 14.4.2 | **오디오 처리 툴.** `play`, `rec` 명령어 포함 (mp3 재생 및 변환). |
+| **libasound2-plugins** | (latest) | **ALSA-PulseAudio 브릿지.** 도커-호스트 간 오디오 스트리밍 최적화 |
+
 - **하드웨어 제어 (Hardware Control)**
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
@@ -78,32 +103,44 @@ source install/setup.bash
 ## 4. 프로젝트 폴더 구조
 
 ```python
-~/gae_ws/src/
+~/gae_ws/
 │
-├── 🟢 [Team GAE 작업 영역] ----------------------------------
-│   │  (여기에 여러분의 파이썬 코드, 런치 파일을 만드세요)
-│   │
-│   ├── .gitignore
-│   ├── 📄 README.md       # [메인] 프로젝트 대문
-│   ├── 📂 docs/           # [문서] 회의록, 아키텍처 다이어그램, 이미지 파일 저장
-│   ├── gae_bringup/       # [통합] 로봇 전체 실행 파일 (.launch.py)
-│   ├── gae_control/       # [제어] 강화학습(RL) 모델 & 보행 알고리즘
-│   │   └── config/        # 파라미터 파일 (.yaml)
-│   │   └── models/        # Isaac Sim 학습 관련 RL 정책 파일 등
-│   ├── gae_hardware/      # [하드웨어] 서보모터(PCA9685), IMU 센서 제어
-│   ├── gae_interface/     # [통신] 웹/음성 인터페이스
-│   ├── gae_msgs/          # [메시지] 커스텀 msg/srv 타입 정의
-│   └── gae_perception/    # [인식] YOLOv8, SLAM, 영상 처리
-│       └── config/        # 파라미터 파일 (.yaml)
-│       └── models/        # YOLOv8 학습 가중치 (.pt)
+├── 📂 docs/               # 회의록, 아키텍처 다이어그램, 이미지 등
+├── 📄 README.md           # [메인] 프로젝트 설명서
+├── 📄 requirements.txt    # [설정] 파이썬 패키지 명세서 (pip)
+├── 📜 run_gae.sh          # [실행] 도커 컨테이너 시동 스크립트
+├── 📜 update_env.sh       # [관리] 환경 동기화 스크립트
+├── 🚫 .gitignore          # [Git] 불필요한 파일 무시 설정
 │
-│
-└── 🔴 [외부 라이브러리 - 수정 금지!] ------------------------
-    │  (Orbbec Astra Pro 카메라 구동을 위한 드라이버 소스)
+└── 📂 src/                # [개발] 소스 코드 메인 디렉토리
     │
-    └── ros2_astra_camera/
-        ├── astra_camera_msgs/  # 카메라 전용 메시지 타입
-        └── astra_camera/       # 실제 드라이버 로직 (C++)
+    ├── 🟢 [Team GAE 패키지] ----------------------------------
+    │   │
+    │   │
+    │   ├── 📦 gae_bringup/     # [통합] 로봇 전체 실행 (.launch.py)
+    │   │
+    │   ├── 📦 gae_control/     # [제어] 강화학습(RL) 및 보행 알고리즘
+    │   │   ├── 📂 config/      # 제어 파라미터 (.yaml)
+    │   │   └── 📂 models/      # Isaac Sim 학습된 RL 정책 파일 (.onnx/.pt)
+    │   │
+    │   ├── 📦 gae_hardware/    # [하드웨어] PCA9685(서보), IMU 센서 드라이버
+    │   │   └── 📂 config/      # 핀맵 및 캘리브레이션 설정
+    │   │
+    │   ├── 📦 gae_interface/   # [통신] 웹 서버 / 음성 인식(STT) / gTTS
+    │   │
+    │   ├── 📦 gae_msgs/        # [메시지] 커스텀 msg/srv 인터페이스 정의
+    │   │
+    │   └── 📦 gae_perception/  # [인식] YOLOv8, SLAM, OpenCV
+    │       ├── 📂 config/      # 카메라/SLAM 설정 파일
+    │       ├── 📂 launch/      # 인식 모듈 개별 실행 파일
+    │       └── 📂 weights/     # YOLOv8 학습 가중치 파일 (.pt)
+    │
+    │
+    └── 🔴 [외부 라이브러리 - 수정 주의] ------------------------
+        │
+        └── 📦 ros2_astra_camera/ # Orbbec Astra Pro 카메라 드라이버
+            ├── astra_camera/
+            └── astra_camera_msgs/
 ```
 
 - **`ros2_astra_camera` (외부 드라이버)**
@@ -169,6 +206,12 @@ jtop
 
 ```python
 sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+- 도커 컨테이너는 관리자만이 파일을 편집할 수 있도록 권한을 뺏음. 해당 명령어로 ~/gae_ws/src 아래 폴더 대한 권한 가져오기
+
+```python
+ssafy@ubuntu:~/gae_ws/src$ sudo chown -R ssafy:ssafy ~/gae_ws/src
 ```
 
 ## 7. 협업 컨벤션(규칙)

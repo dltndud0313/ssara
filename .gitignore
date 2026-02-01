@@ -17,3 +17,9 @@ nul
 # 환경 설정
 *.env
 .env.*
+
+# gae_ws 내부의 빌드 폴더 제외
+gae_ws/build/
+gae_ws/install/
+gae_ws/log/
+*.mp3
