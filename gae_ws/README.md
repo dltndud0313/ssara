@@ -1,4 +1,4 @@
-# 🐕 GAE Robot 통합 개발 환경 가이드 (v1.8)
+# 🐕 GAE Robot 통합 개발 환경 가이드 (v2.0)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -41,18 +41,21 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
 ```
 
-## 3. 설치된 환경 요약 (v1.8)
+## 3. 설치된 환경 요약 (v2.0)
 
-이미지(`gae-system:v1.8`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+이미지(`gae-system:v2.0`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
 | **구분** | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- | --- |
 | **OS** | Ubuntu | **22.04.3 LTS** | Jammy Jellyfish (Jetson Orin Nano 표준) |
+| **JetPack** | **JetPack SDK** | **6.x** | **L4T R36 Driver.** Orin Nano용 최신 펌웨어/BSP. |
 | **ROS** | ROS 2 | **Humble** | Hawksbill (LTS 버전) |
 | **CUDA** | CUDA Toolkit | **12.2** | V12.2.140 (GPU 가속을 위한 핵심 코어) |
 | **Python** | Python | **3.10.12** | Ubuntu 22.04 기본 파이썬 환경 |
+| **Monitor** | **jetson-stats** | **4.2.x** | **jtop** 시스템 모니터링 도구 (CPU/GPU/Fan 상태 확인) |
+
 - **인공지능 및 딥러닝 (AI & Deep Learning)**
     - Jetson의 NPU/GPU를 최대한 활용하도록 **최적화된 버전**이 설치되어 있습니다.
     (⚠️ `pip install`로 함부로 덮어쓰지 마세요. GPU 가속이 풀릴 수 있습니다.)
@@ -65,14 +68,14 @@ source install/setup.bash
 | **Ultralytics** | **8.4.9** | **YOLOv8** 공식 라이브러리. (객체 인식 구현 시 사용) |
 | **faster-whisper** | **1.2.1** | **OpenAI Whisper**의 고속 추론 버전. (CTranslate2 기반 최적화) |
 | **NumPy** | **1.26.4** | **⚠️ 중요:** PyTorch/OpenCV 호환성을 위해 **2.0 미만**으로 고정됨. |
+
 - **비전 및 센서 (Vision & Sensors)**
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
-| **OpenCV** | **4.13.0** | **CUDA 가속 빌드.** (CPU 버전보다 이미지 처리 속도 월등히 빠름) |
+| **OpenCV** | **4.9.0** | **⭐ CUDA(GPU) 가속 빌드.** (`WITH_CUDA=ON`, `cuDNN` 포함). 시스템 전역 설치됨. |
 | **astra_camera** | (Source) | **Orbbec Astra Pro 드라이버.** (`libuvc` 패치 적용하여 소스 빌드됨) |
-| **camera_info_manager** | (Binary) | 카메라 캘리브레이션(.yaml) 로더.
-**해상도 변경 시 필수.** |
+| **camera_info_manager** | (Binary) | 카메라 캘리브레이션(.yaml) 로더. **해상도 변경 시 필수.** |
 | **rtabmap_ros** | (Binary) | RGB-D 카메라 기반 **VSLAM** 패키지 |
 | **astra_camera_msgs** | (Source) | Astra 카메라 전용 메시지 타입 정의 |
 
@@ -91,10 +94,11 @@ source install/setup.bash
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
-| **adafruit-circuitpython-servokit** | 1.3.22 | **PCA9685** (16채널 PWM 드라이버) 제어용. **DS3218MG** 서보 구동 핵심 라이브러리. |
+| **adafruit-circuitpython-servokit** | 1.3.22 | **PCA9685** (서보모터) 제어용. **DS3218MG** 구동 핵심 라이브러리. |
 | **adafruit-circuitpython-mpu6050** | 1.3.5 | **MPU-6050** IMU 센서 데이터 수신용. Blinka 위에서 동작. |
 | **libgpiod / python3-libgpiod** | (System) | **⭐ 최신 표준:** **HC-SR04P(초음파)** 제어를 위한 리눅스 표준 GPIO 도구. |
-| **adafruit-blinka** | 8.23.0 | CircuitPython 라이브러리를 일반 리눅스 환경에서 쓰게 해주는 미들웨어. |
+| **adafruit-blinka** | 8.23.0 | CircuitPython 라이브러리를 리눅스에서 쓰게 해주는 미들웨어. |
+| **Jetson.GPIO** | **2.1.12** | **(내부 의존성)** Blinka 구동을 위한 필수 패키지. **직접 사용 안 함.** |
 | **smbus2** | 0.6.0 | 저수준 I2C 통신 라이브러리. IMU 및 기타 I2C 장치 디버깅용. |
 
 - **통신 및 인터페이스 (Communication & Interface)**
@@ -102,6 +106,7 @@ source install/setup.bash
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
 | **paho-mqtt** | **2.1.0** | **MQTT 프로토콜** 클라이언트. 로봇(Pub)과 웹 서버(Sub) 간의 실시간 데이터 송수신 담당. |
+| **web_video_server** | (Binary) | **웹 비디오 스트리밍.** ROS 이미지 토픽을 웹 브라우저 호환(MJPEG) 포맷으로 변환하여 실시간 송출. |
 
 ## 4. 프로젝트 폴더 구조
 
@@ -120,7 +125,10 @@ source install/setup.bash
     ├── 🟢 [Team GAE 패키지] ----------------------------------
     │   │
     │   │
-    │   ├── 📦 gae_bringup/     # [통합] 로봇 전체 실행 (.launch.py)
+    │   ├── 📦 gae_bringup/      # [통합] 로봇 전체 실행 (.launch.py)
+    │   │└── 📂 tools/                   # 기타 툴
+		│   │    ├── 📄 check_env.py         # 환경 점검 스크립트
+		│   │    └── 📄 check_cuda_opencv.py # CUDA 사용 여부 확인용 코드
     │   │
     │   ├── 📦 gae_control/     # [제어] 강화학습(RL) 및 보행 알고리즘
     │   │   ├── 📂 config/      # 제어 파라미터 (.yaml)
@@ -191,6 +199,42 @@ source install/setup.bash
             min: 0.031s max: 0.100s std dev: 0.01239s window: 29
     ```
     
+
+- **💡OpenCV CUDA 개발 가이드**
+    - 우리는 **OpenCV 4.9.0 (CUDA 포함)** 버전을 사용합니다.
+    - 일반적인 CPU 코드(`cv2.imread` 등)도 잘 돌아가지만, **vSLAM이나 객체 인식 전처리**를 할 때는 아래 규칙을 따라야 성능 이득을 볼 수 있습니다.
+1. **핵심 개념: `GpuMat` (GPU 메모리)**
+    1. CPU의 이미지를 GPU로 옮겨야 연산이 가능합니다. 이 과정(Upload/Download)이 비용이 크므로, **한 번 GPU로 올렸으면 최대한 GPU 안에서 모든 지지고 볶는 작업(Resize, Color Convert, Threshold 등)을 끝내고** 결과만 내려받는 것이 핵심입니다.
+2. **기본 사용 패턴 (Python Code)**
+
+```python
+import cv2
+import numpy as np
+
+def process_image_with_cuda(cpu_image):
+    # 1. GPU 메모리 할당 (GpuMat 생성)
+    gpu_frame = cv2.cuda_GpuMat()
+
+    # 2. Upload: CPU(RAM) -> GPU(VRAM) [비용 발생 구간 ⚠️]
+    gpu_frame.upload(cpu_image)
+
+    # 3. Process: GPU 안에서 고속 연산 (여기서 뽕을 뽑아야 함)
+    # 예: 리사이즈
+    gpu_frame = cv2.cuda.resize(gpu_frame, (640, 480))
+    
+    # 예: 흑백 변환 (cvtColor가 아니라 cuda.cvtColor 사용)
+    gpu_frame = cv2.cuda.cvtColor(gpu_frame, cv2.COLOR_BGR2GRAY)
+    
+    # 예: 가우시안 블러
+    # 필터 생성 후 적용 (CPU 방식과 다름)
+    gaussian_filter = cv2.cuda.createGaussianFilter(cv2.CV_8UC1, cv2.CV_8UC1, (5, 5), 0)
+    gpu_frame = gaussian_filter.apply(gpu_frame)
+
+    # 4. Download: GPU(VRAM) -> CPU(RAM) [비용 발생 구간 ⚠️]
+    result_image = gpu_frame.download()
+
+    return result_image
+```
 
 ## 5. 시스템 리소스 모니터링 (jtop)
 
