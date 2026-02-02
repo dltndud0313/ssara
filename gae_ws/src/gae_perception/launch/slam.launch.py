@@ -19,9 +19,14 @@ def generate_launch_description():
             os.path.join(astra_pkg, 'launch', 'astra_pro.launch.xml')
         ),
         launch_arguments={
-            'color_fps': '15',
-            'depth_fps': '15',
-            'ir_fps': '15'
+            'color_fps': '30',
+            'depth_fps': '30',
+            'ir_fps': '30',
+	    'color_width': '320',  
+            'color_height': '240', 
+            'depth_width': '320',  
+            'depth_height': '240'
+	
         }.items()
     )
 
