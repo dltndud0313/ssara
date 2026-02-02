@@ -1,13 +1,15 @@
-# Byte-compiled / optimized / DLL files
+############################
+# Python (runtime / cache)
+############################
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
+
+############################
+# Python packaging / build
+############################
 build/
 develop-eggs/
 dist/
@@ -23,36 +25,55 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
+############################
+# Test / Coverage
+############################
+.cache/
 .tox/
 .coverage
 .coverage.*
-.cache
+htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+############################
+# Jupyter
+############################
+.ipynb_checkpoints/
 
-# VS Code settings (개인 설정은 공유 X)
-.vscode/
-
-# ROS 2 build artifacts (절대 올리면 안 됨)
+############################
+# ROS 2 (절대 커밋 금지)
+############################
 build/
 install/
 log/
+*/build/
+*/install/
+*/log/
 COLCON_IGNORE
 
-# Large model files (100MB 이상은 무시)
+############################
+# Embedded / Toolchain
+############################
+.vscode/
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+cmake-build-*/
+
+############################
+# AI / Large model files
+############################
 *.pt
 *.pth
 *.onnx
 *.weights
+*.tflite
+*.engine
