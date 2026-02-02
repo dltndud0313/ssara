@@ -1100,6 +1100,7 @@ const getIcon = (type) => {
   display: flex;
   justify-content: space-around;
   align-items: center;
+  padding: 0 8px;
   z-index: 100;
 }
 
@@ -1107,8 +1108,12 @@ const getIcon = (type) => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 8px 16px;
+  flex: 1 1 0%;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
   color: var(--gray-400);
 }
 

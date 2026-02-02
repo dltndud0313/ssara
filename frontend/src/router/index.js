@@ -8,6 +8,8 @@ import LocationView from '../views/LocationView.vue'
 import HistoryView from '../views/HistoryView.vue'
 import NoticesView from '../views/NoticesView.vue'
 import InquiriesView from '../views/InquiriesView.vue'
+import ScreenView from '../views/ScreenView.vue'
+import HealthcareView from '../views/HealthcareView.vue'
 
 const routes = [
   {
@@ -54,6 +56,18 @@ const routes = [
     path: '/inquiries',
     name: 'Inquiries',
     component: InquiriesView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/screen',
+    name: 'Screen',
+    component: ScreenView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/healthcare',
+    name: 'Healthcare',
+    component: HealthcareView,
     meta: { requiresAuth: true }
   }
 ]
