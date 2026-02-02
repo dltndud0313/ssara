@@ -1,4 +1,4 @@
-# 🐕 GAE Robot 통합 개발 환경 가이드 (v1.7)
+# 🐕 GAE Robot 통합 개발 환경 가이드 (v1.8)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -41,9 +41,9 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
 ```
 
-## 3. 설치된 환경 요약 (v1.7)
+## 3. 설치된 환경 요약 (v1.8)
 
-이미지(`gae-system:v1.7`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+이미지(`gae-system:v1.8`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
@@ -91,9 +91,12 @@ source install/setup.bash
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
-| **adafruit-circuitpython-servokit** | 1.3.22 | **PCA9685** (16채널 PWM 드라이버) 제어용. 서보모터 구동에 필수. |
-| **Jetson.GPIO** | 2.1.12 | 라즈베리 파이 GPIO와 문법 유사. 핀 제어(LED, 스위치 등). |
-| **smbus2** | 0.6.0 | **I2C 통신** 라이브러리. (IMU 센서 데이터 수신용) |
+| **adafruit-circuitpython-servokit** | 1.3.22 | **PCA9685** (16채널 PWM 드라이버) 제어용. **DS3218MG** 서보 구동 핵심 라이브러리. |
+| **adafruit-circuitpython-mpu6050** | 1.3.5 | **MPU-6050** IMU 센서 데이터 수신용. Blinka 위에서 동작. |
+| **libgpiod / python3-libgpiod** | (System) | **⭐ 최신 표준:** **HC-SR04P(초음파)** 제어를 위한 리눅스 표준 GPIO 도구. |
+| **adafruit-blinka** | 8.23.0 | CircuitPython 라이브러리를 일반 리눅스 환경에서 쓰게 해주는 미들웨어. |
+| **smbus2** | 0.6.0 | 저수준 I2C 통신 라이브러리. IMU 및 기타 I2C 장치 디버깅용. |
+
 - **통신 및 인터페이스 (Communication & Interface)**
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
