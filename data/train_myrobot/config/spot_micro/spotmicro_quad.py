@@ -1,6 +1,7 @@
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import IdealPDActuatorCfg
 from isaaclab.assets.articulation import ArticulationCfg
+from math import pi
 
 import os
 
@@ -39,8 +40,8 @@ SPOTMICRO_QUAD_CFG = ArticulationCfg(
         pos=(0.0, 0.0, 0.27), # 초기 높이 0.27m
         joint_pos={
             ".*_shoulder": 0.0,
-            ".*_leg": -0.8,
-            ".*_foot": 1.0,
+            ".*_leg": -pi/6,
+            ".*_foot": pi/3,
         },
         joint_vel={".*": 0.0}, # 초기 속도 0
     ),
@@ -51,8 +52,8 @@ SPOTMICRO_QUAD_CFG = ArticulationCfg(
             joint_names_expr=[".*_leg", ".*_foot", ".*_shoulder"],
             stiffness=40.0,  # P gain: 위치 복원력 (강성) -> Phase 1 수정값 적용됨
             damping=5.0,     # D gain: 속도 저항력 (감쇠)
-            effort_limit=2.5, # 최대 토크 제한
-            velocity_limit=6.0, # 최대 속도 제한
+            effort_limit=2.0, # 최대 토크 제한(실제 모터 스펙 반영)
+            velocity_limit=7.0, # 최대 속도 제한(실제 모터 스펙 반영)
         ),
     },
 )

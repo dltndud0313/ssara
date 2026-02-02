@@ -12,8 +12,6 @@ class SpotMicroRoughNoSensorEnvCfg(SpotMicroRoughEnvCfg):
         # 중복 소환 방지를 위해 replace() 사용 시 주의 (이미 부모에서 생성된 경우 덮어써야 함)
         
         # LocomotionVelocityRoughEnvCfg -> SpotMicroRoughEnvCfg -> NoSensorEnvCfg
-        # 부모(rough_env_cfg.py)에서 이미 robot을 정의했지만, 
-        # 우리의 통합된 SPOTMICRO_QUAD_CFG (Stiffness 80, pos 0.27 등 Phase 1 설정 포함)로 "확실하게" 교체
         # self.scene.robot = SPOTMICRO_QUAD_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
         # --- Phase 1: 보상 가중치 조정 (2026-02-01) ---
@@ -24,10 +22,12 @@ class SpotMicroRoughNoSensorEnvCfg(SpotMicroRoughEnvCfg):
 
         # --- 센서 비활성화 ---
         self.scene.height_scanner = None
-        # self.scene.contact_forces = None # Base Contact Termination을 위해 활성화
+        # 주의: Base Contact 종료 조건을 위해 contact_forces 센서는 scene에 남겨둠 (물리 계산용)
+        # self.scene.contact_forces = None 
 
-        # Policy 관측에서 Height Scan 제거
+        # --- 관측 비활성화 (로봇이 센서 정보를 보지 못하게 함) ---
         self.observations.policy.height_scan = None
+        self.observations.policy.contact_forces = None # 명시적 차단
 
         # --- 관련 보상 비활성화 ---
         # 센서 의존 보상 제거
@@ -38,9 +38,10 @@ class SpotMicroRoughNoSensorEnvCfg(SpotMicroRoughEnvCfg):
         if hasattr(self.rewards, "feet_contact_forces"):
             delattr(self.rewards, "feet_contact_forces")
 
-        # --- 종료 조건 비활성화 ---
-        # 몸체 접촉 종료 조건 활성화 (Blind Reset)
-        # self.terminations.base_contact = None
+        # --- 종료 조건 설정 ---
+        # [NEW] [Fix] PhysX Error: Patch buffer overflow 해결
+        # 에러 메시지에서 요구한 358714보다 여유 있게 설정
+        self.sim.physx.gpu_max_rigid_patch_count = 12 * 10**5 
 
 @configclass
 class SpotMicroRoughNoSensorEnvCfg_PLAY(SpotMicroRoughNoSensorEnvCfg):

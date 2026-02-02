@@ -3,8 +3,6 @@ from typing import Sequence
 from isaaclab.utils import configclass
 from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
-# [수정] 외부 파일 참조 제거
-# from .spotmicro_quad import SPOTMICRO_QUAD_CFG
 import os
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import IdealPDActuatorCfg
@@ -65,20 +63,20 @@ class SpotMicroRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/base_link"
 
         # --- 2. 지형 설정 ---
-        self.scene.terrain.terrain_generator.sub_terrains["boxes"].grid_height_range = (0.025, 0.1)
-        self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.01, 0.06)
+        self.scene.terrain.terrain_generator.sub_terrains["boxes"].grid_height_range = (0.005, 0.03)
+        self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range = (0.003, 0.15)
         self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_step = 0.01
 
         # --- 3. 동작 및 속도 범위 ---
         self.actions.joint_pos.scale = 1.0
-        self.commands.base_velocity.ranges.lin_vel_x = (-0.3, 0.3) 
+        self.commands.base_velocity.ranges.lin_vel_x = (-0.2, 0.4) 
         self.commands.base_velocity.ranges.lin_vel_y = (-0.1, 0.1) 
-        self.commands.base_velocity.ranges.ang_vel_z = (-0.2, 0.2)
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.3, 0.3)
 
         # --- 4. 이벤트 설정 ---
         self.events.push_robot = None
         self.events.add_base_mass.params["asset_cfg"].body_names = "base_link"
-        self.events.add_base_mass.params["mass_distribution_params"] = (-0.2, 1.0)
+        self.events.add_base_mass.params["mass_distribution_params"] = (-0.2, 0.4)
         self.events.base_external_force_torque.params["asset_cfg"].body_names = "base_link"
         self.events.base_com.params["asset_cfg"].body_names = "base_link"
         self.events.reset_robot_joints.params["position_range"] = (1.0, 1.0)
@@ -139,7 +137,11 @@ class SpotMicroRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         ))
 
         # --- 6. 종료 조건 ---
-        self.terminations.base_contact.params["sensor_cfg"].body_names = ["base_link"]
+        self.terminations.base_contact.params["sensor_cfg"].body_names = [
+            "base_link", "front_link", "rear_link",
+            "front_right_leg_link", "front_left_leg_link",
+            "rear_right_leg_link", "rear_left_leg_link"
+        ]
 
 @configclass
 class SpotMicroRoughEnvCfg_PLAY(SpotMicroRoughEnvCfg):

@@ -1,7 +1,5 @@
 from isaaclab.utils import configclass
 from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
-# [수정] 외부 파일 참조 제거
-# from .spotmicro_quad import SPOTMICRO_QUAD_CFG 
 import os
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import IdealPDActuatorCfg
@@ -37,14 +35,13 @@ class SpotMicroFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         # --- 동작 및 속도 범위 확장 ---
         self.actions.joint_pos.scale = 0.5
-        self.commands.base_velocity.ranges.lin_vel_x = (-0.2, 0.2) 
-        self.commands.base_velocity.ranges.lin_vel_y = (-0.05, 0.05) 
-        self.commands.base_velocity.ranges.ang_vel_z = (-0.1, 0.1)
+        self.commands.base_velocity.ranges.lin_vel_x = (-0.4, 0.4) 
+        self.commands.base_velocity.ranges.lin_vel_y = (-0.1, 0.1) 
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.4, 0.4)
 
         # --- 이벤트 설정 (오류 수정: base -> base_link) ---
         self.events.push_robot = None
         self.events.add_base_mass.params["asset_cfg"].body_names = "base_link"
-        self.events.add_base_mass.params["mass_distribution_params"] = (-0.2, 1.0)
         self.events.base_external_force_torque.params["asset_cfg"].body_names = "base_link"
         self.events.base_com.params["asset_cfg"].body_names = "base_link"
         self.events.reset_robot_joints.params["position_range"] = (1.0, 1.0)
@@ -55,7 +52,6 @@ class SpotMicroFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.feet_air_time.weight = 2.0 
         self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot_link"
 
-        # 오류 수정: .*THIGH -> .*_leg_link
         self.rewards.undesired_contacts = RewTerm(
             func=mdp.undesired_contacts,
             weight=-5.0,
