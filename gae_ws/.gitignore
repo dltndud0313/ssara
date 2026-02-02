@@ -77,3 +77,14 @@ cmake-build-*/
 *.weights
 *.tflite
 *.engine
+
+# 임시 파일
+*.swp
+
+# 윈도우 썸네일 파일 무시
+Thumbs.db
+
+# 일반적인 데이터베이스 파일 무시
+*.db
+*.sqlite
+*.sqlite3
