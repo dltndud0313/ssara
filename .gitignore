@@ -18,8 +18,28 @@ nul
 *.env
 .env.*
 
-# gae_ws 내부의 빌드 폴더 제외
-gae_ws/build/
-gae_ws/install/
-gae_ws/log/
+
+# --- VS Code 관련 (개인 설정 및 DB 파일) ---
+.vscode/
+*.code-workspace
+*.db
+*.db-shm
+*.db-wal
+.history/
+
+# --- ROS2 빌드 결과물 (절대 올리면 안 됨!) ---
+build/
+install/
+log/
+*/build/
+*/install/
+*/log/
+
+# --- 파이썬/컴파일 임시 파일 ---
+__pycache__/
+*.py[cod]
+
+# --- 기타 잡동사니 ---
+.DS_Store
 *.mp3
+*.wav
