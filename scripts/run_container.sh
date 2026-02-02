@@ -13,6 +13,7 @@ docker run --name isaac-sim \
     -e DISPLAY \
     -e "ROS_DISTRO=humble" \
     -e "RMW_IMPLEMENTATION=rmw_fastrtps_cpp" \
+    -e "LD_LIBRARY_PATH=/isaac-sim/exts/isaacsim.ros2.bridge/humble/lib" \
     -e "ROS_DOMAIN_ID=0" \
     -v /etc/localtime:/etc/localtime:ro \
     -v /etc/timezone:/etc/timezone:ro \
