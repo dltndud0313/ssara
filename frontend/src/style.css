@@ -87,6 +87,9 @@ button, input, textarea, select {
 
 button {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 a {
@@ -121,3 +124,42 @@ img {
 .bg-success { background-color: var(--success-light); }
 .bg-danger { background-color: var(--danger-light); }
 .bg-warning { background-color: var(--warning-light); }
+
+/* 네비게이션 바 고정 크기 */
+.bottom-nav {
+  justify-content: space-around !important;
+}
+
+.bottom-nav .nav-item {
+  flex: 1 1 0 !important;
+  width: 25% !important;
+  max-width: 25% !important;
+  min-width: 0 !important;
+  transform: none !important;
+  transition: none !important;
+  box-sizing: border-box !important;
+}
+
+.bottom-nav .nav-item:active {
+  transform: none !important;
+}
+
+.bottom-nav .nav-item svg {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  flex-shrink: 0 !important;
+}
+
+.bottom-nav .nav-item.active svg {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+}
+
+.bottom-nav .nav-item span {
+  font-size: 11px !important;
+  white-space: nowrap !important;
+}

@@ -59,6 +59,23 @@
           </div>
         </div>
 
+        <div class="quick-actions">
+          <button class="quick-btn screen" @click="$router.push('/screen')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            화면 보러가기
+          </button>
+          <button class="quick-btn healthcare" @click="$router.push('/healthcare')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            헬스케어
+          </button>
+        </div>
+
         <button class="location-btn" @click="$router.push('/location')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
@@ -483,6 +500,46 @@ const handleLogout = () => {
 .battery-fill.medium { background: #F59E0B; }
 .battery-fill.low { background: #EF4444; }
 
+/* 퀵 액션 버튼 */
+.quick-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.quick-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.quick-btn.screen {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.quick-btn.screen:active {
+  background: var(--primary);
+  color: white;
+}
+
+.quick-btn.healthcare {
+  background: #FEE2E2;
+  color: #EF4444;
+}
+
+.quick-btn.healthcare:active {
+  background: #EF4444;
+  color: white;
+}
+
 .location-btn {
   width: 100%;
   height: 48px;
@@ -670,10 +727,13 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 8px 16px;
+  flex: 1 1 0%;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
   color: var(--gray-400);
-  transition: color 0.2s;
 }
 
 .nav-item svg {
