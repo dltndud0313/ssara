@@ -1,45 +1,43 @@
-# IDE
+############################
+# IDE / Editor (공통)
+############################
 .idea/
+.vscode/
+*.code-workspace
+.history/
 
-# Backend - 민감정보
+############################
+# OS / System junk
+############################
+.DS_Store
+Thumbs.db
+nul
+
+############################
+# Environment / Secrets
+############################
+*.env
+.env.*
 backend/src/main/resources/application-dev.yml
+
+############################
+# Backend runtime / logs / DB
+############################
 backend/db_data/
 backend/server.log
 backend/nul
-
-# Mosquitto
-mosquitto/data/
-mosquitto/log/
-
-# Windows 임시 파일
-nul
-
-# 환경 설정
-*.env
-.env.*
-
-
-# --- VS Code 관련 (개인 설정 및 DB 파일) ---
-.vscode/
-*.code-workspace
 *.db
 *.db-shm
 *.db-wal
-.history/
 
-# --- ROS2 빌드 결과물 (절대 올리면 안 됨!) ---
-build/
-install/
-log/
-*/build/
-*/install/
-*/log/
+############################
+# Mosquitto
+############################
+mosquitto/data/
+mosquitto/log/
 
-# --- 파이썬/컴파일 임시 파일 ---
-__pycache__/
-*.py[cod]
-
-# --- 기타 잡동사니 ---
-.DS_Store
+############################
+# Media / 기타 (전역 공통)
+############################
 *.mp3
 *.wav
