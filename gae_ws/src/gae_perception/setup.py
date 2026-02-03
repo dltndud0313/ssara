@@ -12,11 +12,15 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        # Launch 파일이 있다면 (나중에 launch 폴더 생기면 주석 해제)
+        
+        # Launch 파일
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
         
-        # Config
-        (os.path.join('share', package_name, 'config'), glob('config/*')),
+        # Config (기본 설정 파일들)
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'config'), glob('config/*.rviz')),
+        # map
+        (os.path.join('share', package_name, 'config/maps'), glob('config/maps/*')),
         
         # weights (YOLO 모델 등)
         (os.path.join('share', package_name, 'weights'), glob('weights/*')),

@@ -22,7 +22,7 @@ def generate_launch_description():
             'color_fps': '30',
             'depth_fps': '30',
             'ir_fps': '30',
-	    'color_width': '320',  
+	        'color_width': '320',  
             'color_height': '240', 
             'depth_width': '320',  
             'depth_height': '240'
