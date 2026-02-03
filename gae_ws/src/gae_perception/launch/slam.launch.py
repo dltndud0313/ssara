@@ -85,8 +85,25 @@ def generate_launch_description():
         ]
     )
 
+    depth_to_web_node = Node(
+        package='gae_perception',
+        executable='python3',
+        # 파이썬 파일의 절대 경로를 지정합니다
+        arguments=['/root/gae_ws/src/gae_perception/depth_to_web.py'],
+        name='depth_converter',
+        output='screen'
+    )
+
+    web_server_node = Node(
+        package='web_video_server',
+        executable='web_video_server',
+        name='web_server',
+        output='screen'
+    )
     return LaunchDescription([
         tf_node,
         camera_launch,
-        rtabmap_launch
+        rtabmap_launch,
+	depth_to_web_node,
+	web_server_node
     ])
