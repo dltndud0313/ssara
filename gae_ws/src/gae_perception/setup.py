@@ -30,6 +30,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+		'depth_converter = gae_perception.depth_to_web:main',
         ],
     },
 )

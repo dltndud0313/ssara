@@ -30,7 +30,7 @@ def main():
     mic_index = get_mic_index()
     
     print("\n🤖 모델 로딩 중...")
-    model = WhisperModel("base", device="cpu", compute_type="int8")
+    model = WhisperModel("tiny", device="cpu", compute_type="int8")
     recognizer = sr.Recognizer()
     
     # 2. 듣기

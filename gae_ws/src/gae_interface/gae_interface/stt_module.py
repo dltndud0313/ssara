@@ -16,7 +16,7 @@ import subprocess
 class VoiceAssistant:
     def __init__(self):
         print("🤖 AI 모델 로딩 중... (Whisper Tiny)")
-        self.model = WhisperModel("tiny", device="cpu", compute_type="int8")
+        self.model = WhisperModel("base", device="cpu", compute_type="int8")
         self.recognizer = sr.Recognizer()
         
         # 🔥 [수정 1] 잡음 감지 민감도 조절 (수치가 높을수록 둔감해짐)

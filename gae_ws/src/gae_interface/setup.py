@@ -1,4 +1,6 @@
 from setuptools import find_packages, setup
+import os
+from glob import glob
 
 package_name = 'gae_interface'
 
@@ -10,20 +12,22 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='ssafy',
     maintainer_email='ssafy@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Voice interface for GAE robot',
+    license='Apache-2.0',
     extras_require={
-        'test': [
-            'pytest',
-        ],
+        'test': ['pytest'],
     },
     entry_points={
         'console_scripts': [
+            'voice_tiny = gae_interface.stt_module_tiny:main',
+            'voice_base = gae_interface.stt_module_base:main',
+            'voice_small = gae_interface.stt_module_small:main',
         ],
     },
 )

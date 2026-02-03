@@ -70,40 +70,34 @@ def generate_launch_description():
     # 3. Z (위/아래): 로봇 '바닥'이 아니라 '몸통 중앙' 높이에서 카메라가 얼마나 위에 있는가?
     #    (예: 몸통 두께의 절반 위 + 마운트 높이. 보통 5~10cm 위 -> '0.05' ~ '0.1')
     
+    # 4. TF 설정
     tf_node = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
-        arguments=[
-            '0.1',  # X: 앞으로 0.1m (테스트용 가상 수치)
-            '0',    # Y: 좌우 치우침 없음
-            '0.1',  # Z: 몸통보다 0.1m 위에 있음
-            '0',    # Yaw: 회전 없음 (정면)
-            '0',    # Pitch: 회전 없음 (수평)
-            '0',    # Roll: 회전 없음 (수평)
-            'base_link', 
-            'camera_link'
-        ]
+        arguments=['0.1', '0', '0.1', '0', '0', '0', 'base_link', 'camera_link']
     )
 
+    # 5. 뎁스 변환기 노드
     depth_to_web_node = Node(
         package='gae_perception',
-        executable='python3',
-        # 파이썬 파일의 절대 경로를 지정합니다
-        arguments=['/root/gae_ws/src/gae_perception/depth_to_web.py'],
+        executable='depth_converter',
         name='depth_converter',
         output='screen'
     )
 
+    # 6. 웹 서버 노드
     web_server_node = Node(
         package='web_video_server',
         executable='web_video_server',
         name='web_server',
         output='screen'
     )
+
+    # 7. 실행 리스트 (콤마와 괄호를 꼭 확인하세요!)
     return LaunchDescription([
         tf_node,
         camera_launch,
         rtabmap_launch,
-	depth_to_web_node,
-	web_server_node
+        depth_to_web_node,
+        web_server_node
     ])
