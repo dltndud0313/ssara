@@ -8,40 +8,122 @@
 
 ## 🚀 빠른 시작 (Quick Start)
 
-가장 먼저 `git pull`을 받아 최신 상태로 만들고, 아래 스크립트만 실행하세요.
+팀원들은 본인에게 할당된 폴더에서 아래 절차를 따라주세요. (이미 환경은 관리자가 구성해 두었습니다.)
 
-### 1. 환경 실행
+## 💻 개발자별 할당 정보
 
-- 터미널에서 `gae_ws` 폴더로 이동 후 실행 스크립트를 가동합니다.
-(이 스크립트가 USB, 카메라, GPU 권한을 모두 자동으로 연결합니다.)
+| 이름 | 컨테이너 이름 | 호스트 작업 경로 | ROS_DOMAIN_ID |
+| --- | --- | --- | --- |
+| **정지용** | `jjy092801` | `~/S14P11C101/gae_ws` | 101 |
+| **김태연** | `taeyeon` | `~/workspaces/taeyeon/S14P11C101/gae_ws` | 101 |
+| **이수영** | `sooyoung` | `~/workspaces/sooyoung/S14P11C101/gae_ws` | 101 |
+| **김경한** | `kyunghan` | `~/workspaces/kyunghan/S14P11C101/gae_ws` | 101 |
+| **오충민** | `chungmin` | `~/workspaces/chungmin/S14P11C101/gae_ws` | 101 |
+
+### 1. 컨테이너 접속
+
+- 본인의 이름으로 된 폴더로 이동하여 접속 스크립트를 실행합니다.
+- 이 스크립트를 통해 본인만의 독립된 도커 환경(GPU, 카메라 권한 포함)으로 입장합니다.
+- 본 프로젝트는 Jetson Orin Nano의 자원을 효율적으로 사용하고, 개발자 간의 **Git 충돌 및 ROS2 토픽 간섭을 방지**하기 위해 **1인 1컨테이너/1인 1저장소** 체제로 운영됩니다.
 
 ```bash
-cd ~/gae_ws
+# 1. 본인 작업 폴더로 이동 (예: taeyeon, sooyoung 등)
+cd ~/workspaces/[본인이름]
 
-./run_gae.sh
+# 2. 컨테이너 접속 스크립트 실행
+# chmod +x connect.sh << 권한 거부시 실행
+./connect.sh
+```
 
-colcon build --symlink-install
+### 2. 워크스페이스 빌드 (Container 내부)
 
-# build 에러 뜨면 아래 실행 후 다시 colcon build
+- 도커 터미널(`root@ubuntu:/root/gae_ws#`)이 열리면 아래 명령어를 입력합니다.
+- **주의:** Jetson 메모리 보호를 위해 빌드는 **한 명씩 차례대로** 진행해 주세요.
+
+```bash
+# 1. 워크스페이스 이동
+cd /root/gae_ws
+
+# 2. 전체 패키지 빌드
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+# 만약 빌드 에러(충돌) 발생 시 기존 내역 삭제 후 재빌드
 # rm -rf build install log
 # colcon build --symlink-install
 
+# 3. 환경 변수 적용 (새 터미널을 열 때마다 실행하거나 .bashrc에 등록)
 source install/setup.bash
 ```
 
-### 2. 빌드 (Container 내부)
+## 🛠️ 관리자용 가이드 (Jetson 재부팅 시)
 
-- 도커 터미널(`root@ubuntu...`)이 열리면 바로 빌드
+만약 Jetson이 재부팅되었거나 컨테이너가 멈춘 경우, 관리자(`ssafy`)가 아래 명령어를 한 번 실행해줘야 합니다.
+
+```bash
+# Jetson 터미널
+cd ~/workspaces
+
+xhost +local:root
+
+docker compose start
+# docker compose start (특정 인원 ID)
+
+# VSCode 접속 후
+cd ~/S14P11C101/gae_ws
+
+./connect.sh
+```
+
+- **도커 이미지 업데이트 시 가이드**
 
 ```python
-# 전체 패키지 빌드
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+# 1. 워크스페이스 이동
+cd ~/workspaces
 
-# 환경 변수 적용 (최초 1회 혹은 새 패키지 추가 시)
-source install/setup.bash
+# 2. X11 시각화 권한 부여 (재부팅 시 필수)
+xhost +local:root
+
+# 3. 기존 컨테이너 중지 및 제거 (소스 코드는 안전합니다)
+docker compose down
+
+# 4. 새 이미지 기반 컨테이너 생성 및 자동 실행
+# (이 명령어 한 번으로 생성 + 실행(Start)이 동시에 완료됩니다)
+docker compose up -d
+
+# 5. 실행 상태 최종 확인
+docker ps
 ```
 
-## 3. 설치된 환경 요약 (v2.0)
+### 3. Git 협업 규칙
+
+- **개인 설정**: 컨테이너 접속 후 **딱 한 번만** 실행하세요. 이후에는 컨테이너를 껐다 켜도 유지됩니다.
+
+```bash
+git config --local user.name "Your Name"
+git config --local user.email "your_email@example.com"
+```
+
+- **브랜치 관리**: `main` 브랜치에 직접 Push하지 말고, 반드시 본인 브랜치에서 작업 후 PR(Pull Request)을 생성하세요.
+- **최신화**: 작업 시작 전 항상 `git pull`을 받아 팀원들의 변경 사항을 반영하세요.
+
+---
+
+### 💡 팁: 실행이 안 된다면?
+
+만약 `./connect.sh` 실행 시 컨테이너가 꺼져 있다는 메시지가 나오면, 관리자(@jjy092801)에게 **"컨테이너 올려달라"**고 요청하세요!
+
+### 🛠️ 빌드(colcon build)는 언제 다시 하나요?
+
+1. **최초 1회**: 컨테이너를 처음 만들고 접속했을 때 (필수)
+2. **새로운 패키지 추가**: `git pull`을 받았는데 새로운 ROS2 패키지가 생겼을 때
+3. **C++/Msg 수정**: 소스 코드(`.cpp`, `.hpp`)나 커스텀 메시지 파일을 수정했을 때
+4. **빌드 에러 발생**: 원인 모를 빌드 오류가 날 때는 `rm -rf build install log` 후 다시 빌드
+
+> ⚠️ **주의 (Jetson Orin Nano 공통)**
+파이썬(.py) 코드만 수정했다면 colcon build를 다시 할 필요가 없습니다! (단, --symlink-install 옵션으로 빌드했을 경우에만 해당)
+> 
+
+## 3. 소프트웨어 환경 요약 (v2.0)
 
 이미지(`gae-system:v2.0`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
@@ -108,7 +190,40 @@ source install/setup.bash
 | **paho-mqtt** | **2.1.0** | **MQTT 프로토콜** 클라이언트. 로봇(Pub)과 웹 서버(Sub) 간의 실시간 데이터 송수신 담당. |
 | **web_video_server** | (Binary) | **웹 비디오 스트리밍.** ROS 이미지 토픽을 웹 브라우저 호환(MJPEG) 포맷으로 변환하여 실시간 송출. |
 
-## 4. 프로젝트 폴더 구조
+## 4. 하드웨어 환경 요약 (v2.0)
+
+- **컴퓨팅 및 제어 (Computing & Control)**
+
+| **구분** | **모델명** | **수량** | **설명 및 역할** |
+| --- | --- | --- | --- |
+| **Main Board** | **Jetson Orin Nano 8GB** | 1 | **Robot Brain.** 6-core ARM CPU / 1024-core Ampere GPU. RAM 8GB(Shared). |
+| **Storage** | **Samsung PM9B1 (256GB)** | 1 | **Main Storage (NVMe M.2).** PCIe 4.0 지원. OS, 라이브러리, 데이터셋 저장용 고속 I/O. |
+| **Swap Memory** | **19.7GB (Total)** | 1 | **ZRAM + 16GB NVMe File.** 8GB RAM의 한계를 극복하기 위한 대용량 가상 메모리 구성 완료. (OOM 방지) |
+| **PWM Driver** | **PCA9685** (16-ch) | 2 | **Servo Controller.** I2C 통신. 다리 2개(서보 6개)씩 분산 연결. (주소: `0x40`, `0x41` 예상) |
+| **Camera** | **Stereo Camera** | 1 | **Visual Perception.** Depth 정보 취득 및 RTAB-Map 기반 VSLAM 수행. |
+
+- **구동부 (Actuation - Legs)**
+
+| **구분** | **모델명** | **수량** | **설명 및 역할** |
+| --- | --- | --- | --- |
+| **Servo Motor** | **DS3218MG** | 12 | **Joint Actuators.** 20kg·cm 고토크 메탈 기어. **3 DoF x 4 Legs.** (Hip, Upper Leg, Lower Leg). |
+| **Motion Range** | - | - | **180도 (0~180).** Isaac Sim의 DOF Limit 설정 시 이 물리적 한계를 반영해야 함. |
+
+- **센서 (Sensors - Proprioceptive & Exteroceptive)**
+
+| **구분** | **모델명** | **수량** | **설명 및 역할** |
+| --- | --- | --- | --- |
+| **IMU** | **MPU-6050** (6-axis) | 1 | **Body State Estimation.** 가속도/자이로 데이터를 통해 로봇의 기울기(Roll/Pitch) 및 관성 정보 측정. RL 관측(Observation)의 핵심 데이터. |
+| **Ultrasonic** | **HC-SR04P** | 1 | **Obstacle Detection.** 전방 장애물 거리 측정. 3.3V 호환 모델(P) 사용으로 레벨 시프터 없이 GPIO 연결. |
+
+- **전원부 (Power System)**
+
+| **구분** | **모델명** | **수량** | **설명 및 역할** |
+| --- | --- | --- | --- |
+| **Battery** | **Tenanty 2S LiPo** | 2 | **7.4V 5200mAh.** 1개 장착(교체형). 순간 고전류(서보 12개) 방전 대응. (하나는 예비용) |
+| **Step-Down** | **HW-083** (DC-DC) | 2 | **Voltage Regulator.** 배터리 전압(7.4~8.4V)을 서보 적정 전압(6V) 및 로직 전압(5V)으로 강하하여 공급. |
+
+## 5. 프로젝트 폴더 구조
 
 ```python
 ~/gae_ws/
@@ -236,7 +351,7 @@ def process_image_with_cuda(cpu_image):
     return result_image
 ```
 
-## 5. 시스템 리소스 모니터링 (jtop)
+## 6. 시스템 리소스 모니터링 (jtop)
 
 - Jetson Orin Nano의 VRAM(8GB) 상태를 확인하고 싶다면 **호스트 터미널**에서 아래 명령어를 쓰세요.
 
@@ -247,7 +362,7 @@ jtop
 - **MEM:** 시스템 메모리 및 Swap 사용량 체크
 - **GPU:** AI 모델 돌릴 때 부하 체크
 
-## 6. 트러블슈팅
+## 7. 트러블슈팅
 
 - 혹시 Orbbec 카메라가 인식이 안 된다면, USB를 뺐다 꽂은 후 **호스트**에서 아래 명령어를 한 번 입력해 주세요. (Udev 규칙 리로드)
 
@@ -261,63 +376,83 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 ssafy@ubuntu:~/gae_ws/src$ sudo chown -R ssafy:ssafy ~/gae_ws/src
 ```
 
-## 7. 협업 컨벤션(규칙)
+## 8. 협업 컨벤션(규칙)
 
-- **ROS 2 네이밍 컨벤션 (Naming)**
-    - Python 코드
-        - **클래스명:** `PascalCase` (예: `GaePerceptionNode`)
-        - **함수/변수명:** `snake_case` (예: `detect_object`, `image_raw`)
-    - ROS 토픽 & 노드 이름
-        
-        
-        | **구분** | **규칙** | **예시** |
-        | --- | --- | --- |
-        | **노드 이름** | 기능_node | `perception_node`, `control_node` |
-        | **토픽 이름** | /gae/대분류/데이터 | `/gae/camera/rgb/image_raw`
-        `/gae/control/cmd_vel` |
-        | **서비스 이름** | /gae/대분류/동사 | `/gae/system/reset_motor` |
-- **파일 및 폴더 위치 규칙**
-    - **실행 파일(.launch.py):** 무조건 `gae_bringup` 패키지에 통합하거나, 각 패키지의 `launch/` 폴더에.
+### 📢 ROS 2 통신 규칙 (Communication)
+
+모든 노드는 **"서로 코드를 안 봐도 통신이 가능하게"** 설계해야 합니다.
+
+- **토픽(Topic) 명명 규칙**
+    - **형태:** `/(상위 패키지)/(장비)/(기능)`
+    - **원칙:** 누가(Package), 무엇을(Device), 어떻게(Function) 하는지 토픽 이름만 보고 알 수 있어야 함.
+
+| **구분** | **규칙** | **예시 (Good ✅)** |
+| --- | --- | --- |
+| **노드 이름** | 기능_node | `lane_detector_node`, `motor_control_node` |
+| **토픽 이름** | **/(패키지)/(장비)/(기능)** | `/gae_perception/camera/image_raw`
+`/gae_control/motor/cmd_vel` |
+| **서비스 이름** | /(패키지)/(장비)/(동사) | `/gae_system/power/reset` |
+- **메시지 타입 (Message Type)**
+    - **원칙:** **ROS 2 표준 메시지 타입만 사용**합니다. (Custom Msg 지양 🚫)
+    - 이유: 커스텀 메시지를 남발하면, 다른 팀원이 내 코드를 실행할 때마다 빌드 에러가 터집니다.
+    - **권장 타입:**
+        - 기본 데이터: `std_msgs` (String, Int32, Float32...)
+        - 센서/이미지: `sensor_msgs` (Image, LaserScan, Imu...)
+        - 위치/속도: `geometry_msgs` (Twist, PoseStamped...)
+
+### 🚀 실행 및 데이터 관리 (Workflow)
+
+- **실행 파일 (Launch File) 필수**
+    - **규칙:** "내 기능은 명령어 한 줄로 켜진다."
+    - 복잡하게 "python3 뭐 실행하고, 파라미터 뭐 넣고..." 하지 마세요. 무조건 `launch` 파일 하나로 끝내야 합니다.
+    - 
+    
+    ```python
+    # 예시: 이거 한 줄이면 내 파트는 알아서 다 돌아감
+    ros2 launch gae_perception lane_detection.launch.py
+    ```
+    
+- **데이터 녹화 (Rosbag)**
+    - **규칙:** 주행 테스트 시, 결과물이나 센서 데이터는 `rosbag`으로 녹화해서 공유합니다.
+    - 이를 통해 로봇이 없어도 사무실에서 시뮬레이션 및 디버깅이 가능합니다.
+    
+    ```
+    # 예시: 카메라랑 제어 명령 녹화
+    ros2 bag record -o test_data_01 /gae_perception/camera/image_raw /gae_control/motor/cmd_vel
+    ```
+    
+
+### 📂 파일 및 폴더 위치 규칙
+
+- **파일 위치**
+    - **실행 파일(.launch.py):** 각 패키지의 `launch/` 폴더.
     - **설정 값(.yaml):** 각 패키지의 `config/` 폴더. (코드 안에 하드코딩 금지 🚫)
     - **모델 파일(.pt, .onnx):**
         - `gae_perception/weights/`
         - `gae_control/models/`
-    - **package.xml:** 새로운 라이브러리를 쓸 때마다 반드시 고쳐야 합니다
-        - **수정 시점:**
-            1. **커스텀 메시지 사용 시:** 우리가 만든 `gae_msgs`를 다른 패키지에서 쓸 때.
-            2. **다른 ROS 패키지 의존 시:** `sensor_msgs`나 `cv_bridge` 같은 표준 패키지를 쓸 때.
-        - `import` 하는 ROS 패키지나 커스텀 메시지는 반드시 `package.xml`의 `<depend>` 태그에 명시
-            
-            ```python
-            ``특정 ros2 패키지의 package.xml``
-            <depend>rclpy</depend>
-            <depend>gae_msgs</depend> <depend>sensor_msgs</depend> <depend>cv_bridge</depend>
-            
-            ```
-            
-            - gae_msgs는 우리가 만든 커스텀 메시지, sensor_msgs, cv_bridge는 표준 패키므로 추가
-    - **!!경로!!**
-        - **"절대 경로(`/home/ssafy/...`)는 독약입니다."**
-            - 팀원 누구의 컴퓨터에서든, 어떤 경로에 폴더를 두든 돌아가게 하려면 **ROS 2 표준 경로 관리 방식**을 써야 합니다.
-        - **ROS 2 패키지 상대 경로 사용**
-            - `get_package_share_directory` 함수를 사용하여 패키지가 설치된 위치를 기준으로 파일을 찾게 합니다.
-            
-            ```python
-            # 예시
-            import os
-            from ament_index_python.packages import get_package_share_directory
-            
-            # 패키지의 설치 경로(install 폴더 안)를 자동으로 찾아줌
-            package_share_directory = get_package_share_directory('gae_perception')
-            
-            # 그 안에서 weights/폴더 안의 파일을 지정
-            model_path = os.path.join(package_share_directory, 'weights', 'yolov8n.pt')
-            ```
-            
-    - **설정 파일(`launch`, `config`, `models` 등)을 새로 추가**했다면, **반드시 `setup.py`에도 등록**해야 빌드된다.
-- **git 규칙**
-    - 현재 `~/gae_ws/src` 폴더는 **Jetson(호스트)과 Docker(컨테이너)가 서로 "공유"**하고 있습니다.
-        - 도커 안에서 파일을 수정해도 → 바깥(Jetson)에 저장됩니다.
-        - 바깥(Jetson)에서 파일을 수정해도 → 안(Docker)에 반영됩니다
-    - **Git 명령(add, commit, push)은** 굳이 도커 안에서 할 필요 없이, **바깥(Jetson 호스트 터미널)에서 하는 게 훨씬 편하고 안전**
-    - **~/gae_ws/src 에서 git 저장소 연결 후 commit - push 진행하면 됩니다.**
+- **절대 경로 금지 (`/home/ssafy/...` ❌)**
+    - 팀원 컴퓨터마다 경로가 다를 수 있습니다. 무조건 **ROS 2 패키지 상대 경로**를 사용하세요.
+
+```python
+# Good ✅
+from ament_index_python.packages import get_package_share_directory
+pkg_path = get_package_share_directory('gae_perception')
+model_path = os.path.join(pkg_path, 'weights', 'yolov8n.pt')
+```
+
+- **의존성 관리 (`package.xml`, `setup.py`)**
+    - 새로운 라이브러리(`cv_bridge` 등)나 설정 파일(`launch`, `config`)을 추가했다면, 반드시 `package.xml`과 `setup.py`에 등록해야 빌드됩니다.
+    
+
+### 🐍 코딩 스타일 (Python)
+
+- **클래스명:** `PascalCase` (예: `GaePerceptionNode`)
+- **함수/변수명:** `snake_case` (예: `detect_object`, `image_raw`)
+
+### 🐙 Git 규칙
+
+- 현재 `~/gae_ws/src` 폴더는 **Jetson(호스트)과 Docker(컨테이너)가 서로 "공유"**하고 있습니다.
+    - 도커 안에서 파일을 수정해도 → 바깥(Jetson)에 저장됩니다.
+    - 바깥(Jetson)에서 파일을 수정해도 → 안(Docker)에 반영됩니다
+- **Git 명령(add, commit, push)은** 굳이 도커 안에서 할 필요 없이, **바깥(Jetson 호스트 터미널)에서 하는 게 훨씬 편하고 안전**
+- **~/gae_ws/src 에서 git 저장소 연결 후 commit - push 진행하면 됩니다.**
