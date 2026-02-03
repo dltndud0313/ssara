@@ -7,18 +7,23 @@ package_name = 'gae_perception'
 setup(
     name=package_name,
     version='0.0.0',
+    # 1. 중요: config 폴더를 패키지로 포함시키기 위해 find_packages가 필요합니다.
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        # Launch 파일이 있다면 (나중에 launch 폴더 생기면 주석 해제)
+        
+        # Launch 파일
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
         
-        # Config
+        # Maps 
+        (os.path.join('share', package_name, 'maps'), glob('maps/*')),
+        
+        # Config (여기에 .py 파일이 있어도 상관없지만, 실행을 위해선 entry_points가 핵심입니다)
         (os.path.join('share', package_name, 'config'), glob('config/*')),
         
-        # weights (YOLO 모델 등)
+        # weights 
         (os.path.join('share', package_name, 'weights'), glob('weights/*')),
     ],
     install_requires=['setuptools'],
@@ -30,7 +35,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-		'depth_converter = gae_perception.depth_to_web:main',
+            # 파일이 gae_perception/config/depth_to_web.py에 있다면:
+            'depth_converter = gae_perception.depth_to_web:main',
         ],
     },
-)
+) 
