@@ -1,4 +1,4 @@
-# 🐕 GAE Robot 통합 개발 환경 가이드 (v2.1)
+# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.1)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -63,7 +63,7 @@ source install/setup.bash
 # Jetson 터미널
 cd ~/workspaces
 
-xhost +local:root
+# xhost +local:root
 
 docker compose start
 # docker compose start (특정 인원 ID)
@@ -81,7 +81,7 @@ cd ~/S14P11C101/gae_ws
 cd ~/workspaces
 
 # 2. X11 시각화 권한 부여 (재부팅 시 필수)
-xhost +local:root
+# xhost +local:root
 
 # 3. 기존 컨테이너 중지 및 제거 (소스 코드는 안전합니다)
 docker compose down
@@ -92,6 +92,22 @@ docker compose up -d
 
 # 5. 실행 상태 최종 확인
 docker ps
+```
+
+- **Ros2 Humble 코드 개발 후 빌드 진행 가이드**
+
+```python
+# 1. 워크스페이스로 이동
+cd ~/gae_ws
+
+# 2. 코드 수정 후 빌드 (특정 패키지만 빌드하는 습관을 들이면 좋습니다)
+colcon build --symlink-install --packages-select gae_control  <-- 예: gae_control 수정 시
+
+# 3. 환경 설정 적용
+source install/setup.bash
+
+# 4. 실행
+ros2 launch gae_control control.launch.py
 ```
 
 ### 3. Git 협업 규칙
@@ -123,9 +139,9 @@ git config --local user.email "your_email@example.com"
 파이썬(.py) 코드만 수정했다면 colcon build를 다시 할 필요가 없습니다! (단, --symlink-install 옵션으로 빌드했을 경우에만 해당)
 > 
 
-## 3. 소프트웨어 환경 요약 (v2.0)
+## 3. 소프트웨어 환경 요약 (v2.1)
 
-이미지(`gae-system:v2.1`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+이미지(`gae-system:v2.0`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
@@ -149,8 +165,8 @@ git config --local user.email "your_email@example.com"
 | **Torch2TRT** | 0.5.0 | **⭐ 중요:** PyTorch 모델을 TensorRT로 변환해주는 툴. (추론 속도 3~5배 향상 가능) |
 | **Ultralytics** | **8.4.9** | **YOLOv8** 공식 라이브러리. (객체 인식 구현 시 사용) |
 | **faster-whisper** | **1.2.1** | **OpenAI Whisper**의 고속 추론 버전. (CTranslate2 기반 최적화) |
+| **openai** | **2.16.0** | **🆕 LLM Interface.** GPT API 연동 클라이언트. (NumPy < 2.0 호환) |
 | **NumPy** | **1.26.4** | **⚠️ 중요:** PyTorch/OpenCV 호환성을 위해 **2.0 미만**으로 고정됨. |
-
 - **비전 및 센서 (Vision & Sensors)**
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
@@ -190,7 +206,7 @@ git config --local user.email "your_email@example.com"
 | **paho-mqtt** | **2.1.0** | **MQTT 프로토콜** 클라이언트. 로봇(Pub)과 웹 서버(Sub) 간의 실시간 데이터 송수신 담당. |
 | **web_video_server** | (Binary) | **웹 비디오 스트리밍.** ROS 이미지 토픽을 웹 브라우저 호환(MJPEG) 포맷으로 변환하여 실시간 송출. |
 
-## 4. 하드웨어 환경 요약 (v2.0)
+## 4. 하드웨어 환경 요약 (v2.1)
 
 - **컴퓨팅 및 제어 (Computing & Control)**
 
@@ -257,6 +273,7 @@ git config --local user.email "your_email@example.com"
     │   ├── 📦 gae_msgs/        # [메시지] 커스텀 msg/srv 인터페이스 정의
     │   │
     │   └── 📦 gae_perception/  # [인식] YOLOv8, SLAM, OpenCV
+    │       ├── 📂 maps/        # vslam 맵 저장
     │       ├── 📂 config/      # 카메라/SLAM 설정 파일
     │       ├── 📂 launch/      # 인식 모듈 개별 실행 파일
     │       └── 📂 weights/     # YOLOv8 학습 가중치 파일 (.pt)
@@ -374,6 +391,51 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ```python
 ssafy@ubuntu:~/gae_ws/src$ sudo chown -R ssafy:ssafy ~/gae_ws/src
+```
+
+- **Jetson Orin Nano I2C 관련**
+
+![Screenshot from 2026-02-04 11-32-31.png](attachment:fe28bd06-8f1f-4608-828d-ff30260ced32:Screenshot_from_2026-02-04_11-32-31.png)
+
+- **NVIDIA Orin Nano의 내부 I2C 인터페이스 매핑**
+
+| 물리 핀 | Jetson pinmux 이름 | SoC I2C 컨트롤러 | Linux 디바이스 |
+| --- | --- | --- | --- |
+| 27 / 28 | i2c2 | **c240000.i2c** | **/dev/i2c-1** |
+| 3 / 5 | i2c8 | c250000.i2c | /dev/i2c-7 |
+- **명령어 예시**
+
+```python
+ssafy@ubuntu:~$ sudo i2cdetect -y -r 7
+[sudo] password for ssafy: 
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: 40 41 -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+70: 70 -- -- -- -- -- -- --                         
+ssafy@ubuntu:~$ sudo i2cdetect -y -r 1
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- UU -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: UU -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --                         
+ssafy@ubuntu:~$ i2cdetect -l
+i2c-0   i2c             3160000.i2c                             I2C adapter
+i2c-1   i2c             c240000.i2c                             I2C adapter
+i2c-2   i2c             3180000.i2c                             I2C adapter
+i2c-4   i2c             Tegra BPMP I2C adapter                  I2C adapter
+i2c-5   i2c             31b0000.i2c                             I2C adapter
+i2c-7   i2c             c250000.i2c                             I2C adapter
+i2c-9   i2c             NVIDIA SOC i2c adapter 0                I2C adapter
+ssafy@ubuntu:~$ 
 ```
 
 ## 8. 협업 컨벤션(규칙)
