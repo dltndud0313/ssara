@@ -269,12 +269,14 @@
         </svg>
         <span>홈</span>
       </button>
-      <button class="nav-item" @click="$router.push('/location')">
+      <button class="nav-item" @click="$router.push('/features')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-          <circle cx="12" cy="10" r="3"/>
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
         </svg>
-        <span>위치</span>
+        <span>기능</span>
       </button>
       <button class="nav-item" @click="$router.push('/history')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

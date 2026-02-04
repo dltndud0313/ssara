@@ -1,5 +1,6 @@
 <template>
-  <div class="healthcare-view">
+  <div class="healthcare-page">
+    <!-- Header -->
     <header class="header">
       <button class="back-btn" @click="$router.back()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -10,162 +11,191 @@
       <div class="header-spacer"></div>
     </header>
 
-    <main class="content">
-      <!-- 오늘의 건강 요약 -->
-      <section class="summary-section">
-        <div class="summary-card">
-          <div class="summary-header">
-            <div class="summary-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </div>
-            <div class="summary-title">
-              <h2>오늘의 건강</h2>
-              <span class="summary-date">{{ formattedDate }}</span>
+    <!-- Hero Score Section -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <p class="hero-date">{{ formattedDate }}</p>
+        <h2 class="hero-title">오늘의 건강</h2>
+        <div class="score-display">
+          <div class="score-ring" :class="healthScoreClass">
+            <svg class="score-bg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="#e8e8ed" stroke-width="8"/>
+              <circle
+                class="score-progress"
+                cx="50" cy="50" r="45"
+                fill="none"
+                :stroke="scoreColor"
+                stroke-width="8"
+                stroke-linecap="round"
+                :stroke-dasharray="circumference"
+                :stroke-dashoffset="scoreOffset"
+              />
+            </svg>
+            <div class="score-text">
+              <span class="score-number">{{ healthScore }}</span>
+              <span class="score-unit">점</span>
             </div>
           </div>
-          <div class="health-score">
-            <div class="score-circle" :class="healthScoreClass">
-              <span class="score-value">{{ healthScore }}</span>
-              <span class="score-label">점</span>
-            </div>
-            <p class="score-message">{{ healthMessage }}</p>
-          </div>
+          <p class="score-message">{{ healthMessage }}</p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- 활동 지표 -->
-      <section class="metrics-section">
+    <!-- Activity Metrics -->
+    <section class="metrics-section">
+      <div class="section-container">
         <h3 class="section-title">활동 지표</h3>
         <div class="metrics-grid">
+          <!-- Walk Time -->
           <div class="metric-card">
-            <div class="metric-icon walk">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-            </div>
-            <div class="metric-content">
-              <span class="metric-value">{{ dailySummary.walkTime }}<small>분</small></span>
+            <div class="metric-header">
+              <div class="metric-icon blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
               <span class="metric-label">산책 시간</span>
             </div>
+            <div class="metric-value-row">
+              <span class="metric-value">{{ dailySummary.walkTime }}</span>
+              <span class="metric-unit">분</span>
+            </div>
             <div class="metric-progress">
-              <div class="progress-bar">
-                <div class="progress-fill walk" :style="{ width: walkProgress + '%' }"></div>
+              <div class="progress-track">
+                <div class="progress-fill blue" :style="{ width: walkProgress + '%' }"></div>
               </div>
-              <span class="progress-text">목표 60분</span>
+              <span class="progress-label">목표 60분 중 {{ walkProgress.toFixed(0) }}%</span>
             </div>
           </div>
 
+          <!-- Distance -->
           <div class="metric-card">
-            <div class="metric-icon distance">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-            </div>
-            <div class="metric-content">
-              <span class="metric-value">{{ dailySummary.distance }}<small>km</small></span>
+            <div class="metric-header">
+              <div class="metric-icon green">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
               <span class="metric-label">이동 거리</span>
             </div>
+            <div class="metric-value-row">
+              <span class="metric-value">{{ dailySummary.distance }}</span>
+              <span class="metric-unit">km</span>
+            </div>
             <div class="metric-progress">
-              <div class="progress-bar">
-                <div class="progress-fill distance" :style="{ width: distanceProgress + '%' }"></div>
+              <div class="progress-track">
+                <div class="progress-fill green" :style="{ width: distanceProgress + '%' }"></div>
               </div>
-              <span class="progress-text">목표 2km</span>
+              <span class="progress-label">목표 2km 중 {{ distanceProgress.toFixed(0) }}%</span>
             </div>
           </div>
 
+          <!-- Activities -->
           <div class="metric-card">
-            <div class="metric-icon activity">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-              </svg>
-            </div>
-            <div class="metric-content">
-              <span class="metric-value">{{ dailySummary.activities }}<small>회</small></span>
+            <div class="metric-header">
+              <div class="metric-icon orange">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
               <span class="metric-label">활동 횟수</span>
             </div>
+            <div class="metric-value-row">
+              <span class="metric-value">{{ dailySummary.activities }}</span>
+              <span class="metric-unit">회</span>
+            </div>
             <div class="metric-progress">
-              <div class="progress-bar">
-                <div class="progress-fill activity" :style="{ width: activityProgress + '%' }"></div>
+              <div class="progress-track">
+                <div class="progress-fill orange" :style="{ width: activityProgress + '%' }"></div>
               </div>
-              <span class="progress-text">목표 10회</span>
+              <span class="progress-label">목표 10회 중 {{ activityProgress.toFixed(0) }}%</span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- 이상 감지 알림 -->
-      <section class="alerts-section">
+    <!-- Alerts Section -->
+    <section class="alerts-section">
+      <div class="section-container">
         <div class="section-header">
           <h3 class="section-title">이상 감지 알림</h3>
-          <span class="alert-count" :class="{ warning: dailySummary.alerts > 0 }">{{ dailySummary.alerts }}건</span>
+          <span class="alert-badge" :class="{ active: dailySummary.alerts > 0 }">
+            {{ dailySummary.alerts }}건
+          </span>
         </div>
 
-        <div v-if="dailySummary.alerts === 0" class="empty-alerts">
+        <div v-if="dailySummary.alerts === 0" class="empty-state">
           <div class="empty-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
               <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
           </div>
-          <p>오늘은 이상 감지 알림이 없습니다</p>
+          <h4 class="empty-title">이상 없음</h4>
+          <p class="empty-description">오늘은 모든 활동이 정상입니다</p>
         </div>
 
         <div v-else class="alert-list">
-          <div v-for="(alert, index) in recentAlerts" :key="index" class="alert-item">
+          <div v-for="(alert, index) in recentAlerts" :key="index" class="alert-card">
             <div class="alert-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                 <line x1="12" y1="9" x2="12" y2="13"/>
                 <line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
             </div>
             <div class="alert-content">
-              <span class="alert-message">{{ alert.msg }}</span>
+              <p class="alert-message">{{ alert.msg }}</p>
               <span class="alert-time">{{ alert.time }}</span>
             </div>
+            <svg class="alert-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- 건강 팁 -->
-      <section class="tips-section">
+    <!-- Health Tips -->
+    <section class="tips-section">
+      <div class="section-container">
         <h3 class="section-title">오늘의 건강 팁</h3>
         <div class="tip-card">
           <div class="tip-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="16" x2="12" y2="12"/>
-              <line x1="12" y1="8" x2="12.01" y2="8"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
             </svg>
           </div>
-          <div class="tip-content">
-            <p class="tip-text">{{ healthTip }}</p>
-          </div>
+          <p class="tip-text">{{ healthTip }}</p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <div class="bottom-spacer"></div>
-    </main>
+    <!-- Bottom Spacer -->
+    <div class="bottom-spacer"></div>
 
-    <!-- 하단 네비게이션 -->
+    <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-      <button class="nav-item active" @click="$router.push('/home')">
+      <button class="nav-item" @click="$router.push('/home')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
         <span>홈</span>
       </button>
-      <button class="nav-item" @click="$router.push('/location')">
+      <button class="nav-item" @click="$router.push('/features')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-          <circle cx="12" cy="10" r="3"/>
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
         </svg>
-        <span>위치</span>
+        <span>기능</span>
       </button>
       <button class="nav-item" @click="$router.push('/history')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -228,6 +258,20 @@ const healthScoreClass = computed(() => {
   return 'poor';
 });
 
+const scoreColor = computed(() => {
+  if (healthScore.value >= 80) return '#34c759';
+  if (healthScore.value >= 60) return '#007aff';
+  if (healthScore.value >= 40) return '#ff9500';
+  return '#ff3b30';
+});
+
+// 원형 프로그레스 계산
+const circumference = 2 * Math.PI * 45;
+const scoreOffset = computed(() => {
+  const progress = healthScore.value / 100;
+  return circumference * (1 - progress);
+});
+
 const healthMessage = computed(() => {
   if (healthScore.value >= 80) return '오늘 활동량이 충분합니다!';
   if (healthScore.value >= 60) return '조금만 더 활동해 보세요!';
@@ -254,7 +298,6 @@ const healthTip = ref(healthTips[Math.floor(Math.random() * healthTips.length)])
 // 데이터 로드
 const loadData = async () => {
   try {
-    // API에서 오늘 요약 정보 가져오기
     const summaryRes = await activityApi.getTodaySummary();
     dailySummary.value = {
       walkTime: summaryRes.data.walkTime || 0,
@@ -263,7 +306,6 @@ const loadData = async () => {
       alerts: summaryRes.data.alerts || 0
     };
 
-    // 오늘 로그에서 warning 타입만 가져오기
     const logsRes = await activityApi.getTodayLogs();
     recentAlerts.value = logsRes.data
       .filter(log => log.type === 'warning')
@@ -282,7 +324,6 @@ onUnmounted(() => {
   robotStore.disconnectWebSocket();
 });
 
-// WebSocket 실시간 데이터 반영
 const unwatch = robotStore.$subscribe((mutation, state) => {
   if (state.dailySummary) {
     dailySummary.value = {
@@ -299,144 +340,156 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.healthcare-view {
+.healthcare-page {
   min-height: 100vh;
-  background: var(--bg-secondary);
-  padding-bottom: 80px;
+  background: #f5f5f7;
+  font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Header */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: var(--bg-primary);
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
 .back-btn {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #0066cc;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.back-btn:hover {
+  background: rgba(0, 102, 204, 0.1);
 }
 
 .header-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #1d1d1f;
 }
 
 .header-spacer {
   width: 40px;
 }
 
-.content {
-  padding: 0 20px;
+/* Hero Section */
+.hero-section {
+  background: #fff;
+  padding: 32px 24px 48px;
+  text-align: center;
 }
 
-/* 요약 섹션 */
-.summary-section {
-  margin-top: 16px;
+.hero-content {
+  max-width: 400px;
+  margin: 0 auto;
 }
 
-.summary-card {
-  background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
-  border-radius: 20px;
-  padding: 24px;
-  color: white;
+.hero-date {
+  font-size: 15px;
+  color: #86868b;
+  margin-bottom: 4px;
 }
 
-.summary-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.summary-icon {
-  width: 48px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.summary-title h2 {
-  font-size: 18px;
+.hero-title {
+  font-size: 32px;
   font-weight: 600;
-  margin-bottom: 2px;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+  margin-bottom: 32px;
 }
 
-.summary-date {
-  font-size: 13px;
-  opacity: 0.8;
-}
-
-.health-score {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.score-circle {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+.score-display {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 16px;
 }
 
-.score-circle.excellent {
-  background: rgba(34, 197, 94, 0.3);
+.score-ring {
+  position: relative;
+  width: 160px;
+  height: 160px;
 }
 
-.score-circle.good {
-  background: rgba(59, 130, 246, 0.3);
+.score-bg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
 }
 
-.score-circle.fair {
-  background: rgba(245, 158, 11, 0.3);
+.score-progress {
+  transition: stroke-dashoffset 1s ease-out;
 }
 
-.score-circle.poor {
-  background: rgba(239, 68, 68, 0.3);
+.score-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
 }
 
-.score-value {
-  font-size: 28px;
-  font-weight: 700;
+.score-number {
+  display: block;
+  font-size: 48px;
+  font-weight: 600;
+  color: #1d1d1f;
+  line-height: 1;
 }
 
-.score-label {
-  font-size: 12px;
-  opacity: 0.8;
+.score-unit {
+  font-size: 17px;
+  color: #86868b;
 }
 
 .score-message {
-  flex: 1;
-  font-size: 15px;
+  font-size: 17px;
+  color: #1d1d1f;
   font-weight: 500;
-  line-height: 1.5;
 }
 
-/* 지표 섹션 */
-.metrics-section {
-  margin-top: 28px;
+/* Section Common */
+.section-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .section-title {
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 14px;
+  color: #1d1d1f;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Metrics Section */
+.metrics-section {
+  padding: 32px 0;
 }
 
 .metrics-grid {
@@ -446,12 +499,16 @@ onUnmounted(() => {
 }
 
 .metric-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.metric-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: var(--bg-primary);
-  border-radius: 16px;
-  padding: 16px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .metric-icon {
@@ -461,129 +518,133 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
-.metric-icon.walk {
-  background: var(--primary-light);
-  color: var(--primary);
+.metric-icon.blue {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
 }
 
-.metric-icon.distance {
-  background: var(--success-light);
-  color: var(--success);
+.metric-icon.green {
+  background: rgba(52, 199, 89, 0.1);
+  color: #34c759;
 }
 
-.metric-icon.activity {
-  background: var(--warning-light);
-  color: var(--warning);
-}
-
-.metric-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.metric-value {
-  display: block;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.metric-value small {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
+.metric-icon.orange {
+  background: rgba(255, 149, 0, 0.1);
+  color: #ff9500;
 }
 
 .metric-label {
-  font-size: 13px;
-  color: var(--text-tertiary);
+  font-size: 15px;
+  color: #86868b;
+  font-weight: 500;
+}
+
+.metric-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.metric-value {
+  font-size: 40px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+}
+
+.metric-unit {
+  font-size: 17px;
+  color: #86868b;
 }
 
 .metric-progress {
-  width: 100px;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.progress-bar {
-  height: 6px;
-  background: var(--gray-100);
-  border-radius: 3px;
+.progress-track {
+  height: 8px;
+  background: #e8e8ed;
+  border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
 }
 
-.progress-fill.walk {
-  background: var(--primary);
+.progress-fill.blue {
+  background: linear-gradient(90deg, #007aff, #5ac8fa);
 }
 
-.progress-fill.distance {
-  background: var(--success);
+.progress-fill.green {
+  background: linear-gradient(90deg, #34c759, #30d158);
 }
 
-.progress-fill.activity {
-  background: var(--warning);
+.progress-fill.orange {
+  background: linear-gradient(90deg, #ff9500, #ffcc00);
 }
 
-.progress-text {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
-  display: block;
+.progress-label {
+  font-size: 13px;
+  color: #86868b;
   text-align: right;
 }
 
-/* 알림 섹션 */
+/* Alerts Section */
 .alerts-section {
-  margin-top: 28px;
+  padding: 32px 0;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.alert-count {
+.alert-badge {
   font-size: 14px;
   font-weight: 600;
-  color: var(--success);
+  color: #34c759;
+  padding: 4px 12px;
+  background: rgba(52, 199, 89, 0.1);
+  border-radius: 20px;
 }
 
-.alert-count.warning {
-  color: var(--warning);
+.alert-badge.active {
+  color: #ff9500;
+  background: rgba(255, 149, 0, 0.1);
 }
 
-.empty-alerts {
-  background: var(--bg-primary);
+.empty-state {
+  background: #fff;
   border-radius: 16px;
-  padding: 32px 16px;
+  padding: 48px 24px;
   text-align: center;
 }
 
 .empty-icon {
-  width: 56px;
-  height: 56px;
-  background: var(--success-light);
-  color: var(--success);
+  width: 80px;
+  height: 80px;
+  background: rgba(52, 199, 89, 0.1);
+  color: #34c759;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 12px;
+  margin: 0 auto 16px;
 }
 
-.empty-alerts p {
-  font-size: 14px;
-  color: var(--text-tertiary);
+.empty-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 4px;
+}
+
+.empty-description {
+  font-size: 15px;
+  color: #86868b;
 }
 
 .alert-list {
@@ -592,20 +653,20 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.alert-item {
+.alert-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--bg-primary);
+  background: #fff;
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 16px;
 }
 
 .alert-icon {
-  width: 36px;
-  height: 36px;
-  background: var(--warning-light);
-  color: var(--warning);
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 149, 0, 0.1);
+  color: #ff9500;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -619,37 +680,42 @@ onUnmounted(() => {
 }
 
 .alert-message {
-  display: block;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #1d1d1f;
+  margin-bottom: 2px;
 }
 
 .alert-time {
-  font-size: 12px;
-  color: var(--text-tertiary);
+  font-size: 13px;
+  color: #86868b;
 }
 
-/* 팁 섹션 */
+.alert-chevron {
+  color: #c7c7cc;
+  flex-shrink: 0;
+}
+
+/* Tips Section */
 .tips-section {
-  margin-top: 28px;
+  padding: 32px 0;
 }
 
 .tip-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  background: var(--bg-primary);
-  border-radius: 16px;
-  padding: 18px;
+  gap: 16px;
 }
 
 .tip-icon {
-  width: 44px;
-  height: 44px;
-  background: var(--primary-light);
-  color: var(--primary);
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #007aff 0%, #5ac8fa 100%);
+  color: #fff;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -657,17 +723,18 @@ onUnmounted(() => {
 }
 
 .tip-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-size: 17px;
+  color: #1d1d1f;
   line-height: 1.6;
+  font-weight: 500;
+  padding-top: 4px;
 }
 
+/* Bottom Spacer & Nav */
 .bottom-spacer {
-  height: 20px;
+  height: 100px;
 }
 
-/* 하단 네비게이션 */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -676,8 +743,10 @@ onUnmounted(() => {
   max-width: 600px;
   margin: 0 auto;
   height: 72px;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--gray-100);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid #e8e8ed;
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -695,7 +764,15 @@ onUnmounted(() => {
   width: 100%;
   min-width: 0;
   padding: 8px 0;
-  color: var(--gray-400);
+  color: #86868b;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.nav-item:hover {
+  color: #0066cc;
 }
 
 .nav-item svg {
@@ -708,7 +785,27 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.nav-item.active {
-  color: var(--primary);
+/* Responsive */
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 28px;
+  }
+
+  .score-ring {
+    width: 140px;
+    height: 140px;
+  }
+
+  .score-number {
+    font-size: 40px;
+  }
+
+  .metric-value {
+    font-size: 32px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
 }
 </style>
