@@ -88,7 +88,7 @@ class SpotMicroRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.track_ang_vel_z_exp.weight = 3.5  
         
         # 발 공중 시간 (임계값 0.12로 유지, 소형 로봇 최적화)
-        self.rewards.feet_air_time.weight = 1.0 
+        self.rewards.feet_air_time.weight = 5.0 
         self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot_link"
         self.rewards.feet_air_time.params["threshold"] = 0.15
 
@@ -137,16 +137,10 @@ class SpotMicroRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         ))
 
         # --- 6. 종료 조건 ---
-        # 초기 학습 조건
-        # self.terminations.base_contact.params["sensor_cfg"].body_names = [
-        #    "base_link", "front_link", "rear_link",
-        #    "front_right_leg_link", "front_left_leg_link",
-        #    "rear_right_leg_link", "rear_left_leg_link"
-        # ]
-
-        # 학습이 진행된 후, 아래 조건으로 완화
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
-            "base_link", "front_link", "rear_link"
+            "base_link", "front_link", "rear_link",
+            "front_right_leg_link", "front_left_leg_link",
+            "rear_right_leg_link", "rear_left_leg_link"
         ]
 
 @configclass

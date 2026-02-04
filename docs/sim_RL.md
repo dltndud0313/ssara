@@ -319,3 +319,11 @@ self.terminations.base_contact.params["sensor_cfg"].body_names =
 
 "rear_right_leg_link", "rear_left_leg_link"]
 걍 몸통 + 윗다리 다 추가함 ㅋㅋ
+
+---
+>아이작랩 예제 코드 기반의 `spotmicroIsaacLab_github`코드 기반으로, 위에 수정한 값들만 바꿔서 환경 엎기
+
+### 1. __init__.py
+> 얘는 그냥 기존 거 들고와서 쓰고, 젬미니한테 이거에 맞게 코드 리팩터링을 맡기는 게 나을 듯
+
+### 2. `rough_env.py`

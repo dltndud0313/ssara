@@ -96,7 +96,7 @@ class SpotMicroRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.undesired_contacts = RewTerm(
             func=mdp.undesired_contacts,
             weight=-5.0,
-            params={self.events.base_external_force_torque.params["asset_cfg"].body_names = "base_link"
+            params={
                 "sensor_cfg": SceneEntityCfg("contact_forces", 
                     body_names=["base_link", ".*_shoulder_link", ".*_leg_link"]),
                 "threshold": 1.0,
@@ -137,7 +137,11 @@ class SpotMicroRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         ))
 
         # --- 6. 종료 조건 ---
-        self.terminations.base_contact.params["sensor_cfg"].body_names = ["base_link"]
+        self.terminations.base_contact.params["sensor_cfg"].body_names = [
+            "base_link", "front_link", "rear_link",
+            "front_right_leg_link", "front_left_leg_link",
+            "rear_right_leg_link", "rear_left_leg_link"
+        ]
 
 @configclass
 class SpotMicroRoughEnvCfg_PLAY(SpotMicroRoughEnvCfg):
