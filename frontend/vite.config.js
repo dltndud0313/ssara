@@ -40,10 +40,17 @@ export default defineConfig({
     // 백엔드 연결 설정
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // Spring Boot 포트 - AWS에서는 안되나 암튼 그런 이야기를 들음.  
+        target: 'http://localhost:8080', // Spring Boot 포트 - AWS에서는 안되나 암튼 그런 이야기를 들음.
         changeOrigin: true,
         secure: false,
         ws: true
+      },
+      // 로봇 카메라 스트림 프록시 (CORS 우회)
+      '/robot-stream': {
+        target: 'http://192.168.100.246:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/robot-stream/, '')
       }
     }
   }
