@@ -30,6 +30,9 @@ backend/nul
 *.db-shm
 *.db-wal
 
+# maps 폴더 안의 db만 예외로 허용
+!src/gae_perception/maps/*.db
+
 ############################
 # Mosquitto
 ############################
