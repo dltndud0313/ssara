@@ -35,6 +35,7 @@ setup(
     entry_points={
         'console_scripts': [
 		'depth_converter = gae_perception.depth_to_web:main',
+        'data_recorder = gae_perception.data_recorder:main',
         ],
     },
 )
