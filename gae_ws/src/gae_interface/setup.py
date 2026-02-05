@@ -29,6 +29,8 @@ setup(
             'voice_base = gae_interface.stt_module_base:main',
             'voice_small = gae_interface.stt_module_small:main',
             'voice_gpt = gae_interface.stt_module_gpt:main',
+            'voice_mqtt = gae_interface.stt_module_mqtt:main',
+            'voice_final = gae_interface.stt_module_final:main',
         ],
     },
 )
