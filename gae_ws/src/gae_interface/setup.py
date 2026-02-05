@@ -31,6 +31,7 @@ setup(
             'voice_gpt = gae_interface.stt_module_gpt:main',
             'voice_mqtt = gae_interface.stt_module_mqtt:main',
             'voice_final = gae_interface.stt_module_final:main',
+            'voice_map = gae_interface.stt_module_map:main',
         ],
     },
 )
