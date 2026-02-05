@@ -43,10 +43,10 @@ SPOTMICRO_QUAD_CFG = ArticulationCfg(
     actuators={
         "base_legs": IdealPDActuatorCfg(
             joint_names_expr=[".*_leg", ".*_foot", ".*_shoulder"],
-            stiffness    = 40.0,        # P게인 (강성, N·m/rad): 관절 복원력 (무거운 로봇은 ~40까지 증가)
-            damping      = 5.0,         # D게인 (감쇠, N·m·s/rad): 진동 억제 (P게인의 약 5% 수준 권장)
-            effort_limit = 2.0,         # 최대 토크 (N·m): 모터가 낼 수 있는 최대 힘
-            velocity_limit = 7.0        # 최대 속도 (rad/s): 관절 회전 속도 한계
+            stiffness    = 40.0,        # ≈ 10 N·m/rad  → có thể nâng tới ~40 khi robot nặng
+            damping      = 5.0,       # ≈ 2 N·m·s/rad  (5 % k‑p) – bắt đầu ít, tăng dần
+            effort_limit = 2.0,               # N·m  (ngang stall‑torque 6 V)
+            velocity_limit = 7.0              # rad/s (> 7.5 để không kìm tốc độ tối đa)
         ),
         # "base_legs": ImplicitActuatorCfg(
         #     joint_names_expr=[".*_leg", ".*_foot", ".*_shoulder"],   # regex khớp tên hinge
