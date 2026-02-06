@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 
 class VoiceAssistant:
     def __init__(self, mp3_dir):
-        print("🤖 AI 모델 로딩 중... (발음 교정 모드)")
+        print("🤖 AI 모델 로딩 중... (Clean Web Log + Guardian Options)")
         self.model = WhisperModel("base", device="cpu", compute_type="int8")
         self.recognizer = sr.Recognizer()
         self.recognizer.energy_threshold = 500
@@ -36,7 +36,6 @@ class VoiceAssistant:
 
     def play_beep(self, type="start"):
         time.sleep(0.05)
-        # 소리 작게 (vol 0.1)
         cmd = "play -n -q synth 0.1 sin 800 vol 0.1" if type == "start" else "play -n -q synth 0.1 sin 600 vol 0.1"
         os.system(f"{cmd} > /dev/null 2>&1")
         time.sleep(0.05)
@@ -63,14 +62,13 @@ class VoiceAssistant:
             wav_file.writeframes(audio.frame_data)
         wav_buffer.seek(0)
 
-        # [수정] 오인식 되는 단어들을 프롬프트에 힌트로 넣어줌
+        # [강화된 단어장] 로그 기반 오타 추가 (캬원, 평원 등)
         context_words = (
-            "싸라, 사라, 자라,"
-            "앞으로 가, 액수로 가, 압도도 가, 앗으로 가, 아프로 가,"
-            "멈춰, 멈췄어, 서, 스톱, 정지,"
-            "병원, 약국, 싸피, 싹키, 사피, 좌키,"
-            "데리러, 젤리로, 데리고,"
-            "지금 몇 시야"
+            "싸라, 사라, 자라, 병원, 약국, 싸피, 싹키, 사피, 좌키,"
+            "캬원, 평원, 정원, 경원, 헬원, 액수로, 압도도, 앗으로,"
+            "데리러, 젤리로, 데리고, 고자에게, 도와줘, 위치,"
+            "지금 몇 시야, 멈췄어, 멈췄니,"
+            "앞으로 가, 멈춰, 가줘, 해줘"
         )
 
         segments, _ = self.model.transcribe(
@@ -115,7 +113,7 @@ class VoiceNode(Node):
         self.last_warning_time = 0
         
         threading.Thread(target=self.voice_loop, daemon=True).start()
-        print("✅ 로봇 '싸라' 준비 완료 (발음 교정 Ver)")
+        print("✅ 로봇 '싸라' 준비 완료 (Clean Web Logs)")
 
     def yolo_callback(self, msg):
         class_id = msg.data
@@ -131,6 +129,16 @@ class VoiceNode(Node):
             except: data = {"type": "text", "text": payload}
             
             if msg.topic == "/gae/map_to_voice":
+                msg_type = data.get("type", "")
+                
+                # [수정] nav_guide가 최우선
+                if msg_type == "nav_guide":
+                    guide_text = data.get("text", "")
+                    self.bot.speak(guide_text)
+                    self.log_and_send(f"[네비] {guide_text}", "robot") # 네비 안내는 웹에도 전송
+                    return
+
+                # 검색 결과
                 target = data.get("target", "목적지")
                 distance = data.get("distance", "")
                 if distance: response = f"{target}까지 {distance} 남았습니다."
@@ -152,12 +160,18 @@ class VoiceNode(Node):
             self.mqtt_client.publish(topic, payload)
         except: pass
 
-    def log_and_send(self, message, msg_type="conversation"):
+    # [핵심 수정] send_to_web 옵션 추가 (기본값 True)
+    def log_and_send(self, message, msg_type="conversation", send_to_web=True):
         kst = timezone(timedelta(hours=9))
         kst_now = datetime.now(kst)
+        
+        # 1. 로컬 파일에는 무조건 씀
         with open(self.log_file, 'a', encoding='utf-8') as f:
             f.write(f"[{kst_now.strftime('%H:%M:%S')}] {message}\n")
-        self.mqtt_publish("/gae/voice_to_web", message, msg_type)
+        
+        # 2. 웹에는 send_to_web이 True일 때만 보냄
+        if send_to_web:
+            self.mqtt_publish("/gae/voice_to_web", message, msg_type)
 
     def execute_node(self, action, response_text):
         self.bot.speak(response_text)
@@ -166,21 +180,18 @@ class VoiceNode(Node):
         if action in node_map:
             try: 
                 proc = subprocess.Popen(node_map[action].split())
-                self.log_and_send(f"[실행] {action} 노드 (PID: {proc.pid})", "action")
+                # [중요] send_to_web=False 설정 -> 웹에는 안 보냄!
+                self.log_and_send(f"[실행] {action} 노드 (PID: {proc.pid})", "action", send_to_web=False)
             except Exception as e: 
-                self.log_and_send(f"[에러] {action} 실패: {e}", "error")
+                self.log_and_send(f"[에러] {action} 실패: {e}", "error", send_to_web=False)
 
     def publish_status(self, status):
         msg = String(); msg.data = status; self.status_pub.publish(msg)
 
-    # =========================================================
-    # [핵심 수정] 오인식 단어 처리 (여기가 바뀜)
-    # =========================================================
     def process_command(self, text):
         self.log_and_send(f"[사용자] {text}", "user")
 
-        # 1. 🚨 긴급 정지 (멈췄어, 서, 정지)
-        # '멈췄어'를 시간에서 빼고 여기로 가져옴!
+        # 1. 🚨 긴급 정지
         if any(x in text for x in ['서', '서!', '멈춰', '스톱', '정지', '위험해', '멈췄어']):
             self.execute_node("stop", "멈추겠습니다.")
             return
@@ -190,15 +201,24 @@ class VoiceNode(Node):
             self.bot.speak("네!")
             return
 
-        # 3. 🆘 보호자
-        if any(x in text for x in ['데리', '보호자', '도와', '젤리', '탈리', '고자']):
-            self.mqtt_publish("/gae/voice_to_web", "사용자 호출! 데리러 와주세요.", "emergency")
-            self.bot.speak("보호자에게 연락했습니다.")
-            self.log_and_send("[로봇] 보호자에게 연락했습니다.", "robot")
+        # 3. 🆘 보호자 메시지 세분화 (여기가 바뀜)
+        if any(x in text for x in ['데리', '보호자', '도와', '젤리', '탈리', '고자', '연락', '위치']):
+            msg_text = "사용자가 호출했습니다." # 기본값
+            
+            if "위치" in text:
+                # 실제 GPS 연동 전이라 임시 좌표 전송
+                msg_text = "사용자가 현재 위치를 전송했습니다. (광주 싸피 1층)"
+            elif any(x in text for x in ['와', '데리', '젤리', '탈리']):
+                msg_text = "사용자가 데리러 와달라고 요청했습니다."
+            elif any(x in text for x in ['도와', '살려']):
+                msg_text = "사용자가 긴급 도움을 요청했습니다!"
+            
+            self.mqtt_publish("/gae/voice_to_web", msg_text, "emergency")
+            self.bot.speak("보호자에게 메시지를 보냈습니다.")
+            self.log_and_send(f"[로봇] {msg_text}", "robot")
             return
 
-        # 4. ⏰ 시간 (멈췄어 삭제됨)
-        # 이제 '멈춰'랑 헷갈려서 시간 말하는 일 없음
+        # 4. ⏰ 시간
         if any(x in text for x in ['시간', '몇 시', '언제']):
             kst = timezone(timedelta(hours=9))
             now = datetime.now(kst)
@@ -207,17 +227,21 @@ class VoiceNode(Node):
             self.log_and_send(f"[로봇] {response}", "robot")
             return
 
-        # 5. 🗺️ 장소 (검색 요청)
-        if any(x in text for x in ['병원', '약국', '집', '싸피', '싹키', '사피', '좌키', '은행', '가자', '가줘']):
-            target = "싸피" if any(s in text for s in ['싸피', '싹키', '좌키']) else ("병원" if "병원" in text else ("약국" if "약국" in text else "목적지"))
+        # 5. 🗺️ 장소 (오타 포함)
+        # 평원, 캬원, 정원, 경원 -> 전부 '병원'으로 처리
+        if any(x in text for x in ['병원', '약국', '집', '싸피', '싹키', '사피', '좌키', '은행', '가자', '가줘', '평원', '캬원', '정원', '경원', '헬원']):
+            target = "싸피" if any(s in text for s in ['싸피', '싹키', '좌키']) else \
+                     ("병원" if any(s in text for s in ['병원', '평원', '캬원', '정원', '경원', '헬원']) else \
+                     ("약국" if "약국" in text else \
+                     ("집" if "집" in text else "목적지")))
+            
             response = f"{target} 위치를 검색하고 있습니다."
             self.bot.speak(response)
             self.log_and_send(f"[로봇] {response}", "robot")
             self.mqtt_publish("/gae/voice_to_map", target, "search")
             return 
 
-        # 6. 🚗 주행 명령 (오인식 단어 추가!)
-        # 액수로, 압도도, 앗으로, 아프로 -> 전부 '앞으로' 취급
+        # 6. 🚗 주행 명령 (오타 포함)
         if any(x in text for x in ['앞으로', '전진', '출발', '액수로', '압도도', '앗으로', '아프로']):
             self.execute_node("forward", "앞으로 갑니다.")
             return
@@ -242,4 +266,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
