@@ -2,26 +2,27 @@
 import time
 import sys
 import os
-import board
-import busio
-from adafruit_servokit import ServoKit
+try:
+    import board
+    import busio
+    from adafruit_servokit import ServoKit
+    HARDWARE_AVAILABLE = True
+except ImportError:
+    HARDWARE_AVAILABLE = False
+    print("⚠️  Hardware modules not found. Running in simulation/dry-run mode.")
 
 # ---------------------------------------------------------
 # [설정 파일 Import]
 # ---------------------------------------------------------
-# 현재 위치: .../gae_hardware/tools/
+# 현재 위치: .../scripts/sim2real/
 current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# 목표 위치: .../gae_hardware/gae_hardware/config/
-# (상위 폴더로 이동 후 gae_hardware/config 진입)
-config_dir = os.path.abspath(os.path.join(current_dir, '../gae_hardware/config'))
-sys.path.append(config_dir)
+sys.path.append(current_dir)
 
 try:
-    import hardware_config_test as hw
-    print(f"✅ 설정 파일 로드 성공: {config_dir}/hardware_config.py")
+    import hardware_config as hw
+    print(f"✅ 설정 파일 로드 성공: {current_dir}/hardware_config.py")
 except ImportError:
-    print(f"❌ 설정 파일을 찾을 수 없습니다. 경로를 확인하세요: {config_dir}")
+    print(f"❌ 설정 파일을 찾을 수 없습니다. 경로를 확인하세요: {current_dir}")
     sys.exit(1)
 
 # Initialize Kits (Global or specific scope? User snippet puts them in main, but my code relied on global or passed vars)
@@ -36,7 +37,7 @@ kit_rear = None
 def get_joint_info(joint_name_input):
     """
     Input string example: 'fl_foot', 'rr_sh', 'front-left leg'
-    Returns: (kit_instance, pin_number, direction, kit_name)
+    Returns: (kit_instance, pin_number, direction, offset, kit_name)
     """
     joint_name_input = joint_name_input.lower().replace("_", " ").replace("-", " ").strip()
     parts = joint_name_input.split()
@@ -74,10 +75,11 @@ def get_joint_info(joint_name_input):
     kit_type = config_data['kit'] # 'front' or 'rear'
     pin = config_data['pins'][part_idx]
     direction = config_data['dirs'][part_idx]
+    offset = config_data['offset'][part_idx]
     
     kit = kit_front if kit_type == 'front' else kit_rear
     
-    return kit, pin, direction, f"{leg_key} (Kit: {kit_type})"
+    return kit, pin, direction, offset, f"{leg_key} (Kit: {kit_type})"
 
 def move_servo(kit, pin, angle, dry_run=False):
     if dry_run or kit is None:
@@ -149,18 +151,17 @@ def main():
                 continue
 
             # Find Joint
-            kit, pin, direction, leg_name = get_joint_info(joint_str)
+            kit, pin, direction, offset, leg_name = get_joint_info(joint_str)
             
             if pin is None:
                 print(f"[Error] Unknown joint: '{joint_str}'")
                 continue
 
-            # Apply Formula: (dirs * input) + 90
-            # hw_cfg.py 'dirs' elements are 1.0 or -1.0
-            target_angle = (direction * angle_input) + 90.0
+            # Apply Formula: 90 + dir * (input + offset)
+            target_angle = 90.0 + direction * (angle_input + offset)
 
             print(f"Target: {leg_name} (Pin {pin})")
-            print(f"Formula: ({direction} * {angle_input}) + 90 = {target_angle}")
+            print(f"Formula: 90 + {direction} * ({angle_input} + {offset}) = {target_angle}")
             
             move_servo(kit, pin, target_angle, dry_run=dry_run)
 

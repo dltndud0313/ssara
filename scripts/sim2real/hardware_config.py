@@ -42,6 +42,7 @@ PIN_MAP = {
         'kit': 'front',
         'pins':     [0, 1, 2],    
         'dirs':     [-1.0, -1.0, 1.0],
+        'offset':   [0.0, 0.0, 0.0],
         'init_rad': FROG_POSE
     },
 
@@ -52,6 +53,7 @@ PIN_MAP = {
         'kit': 'front',
         'pins':     [15, 14, 13],       
         'dirs':     [1.0, 1.0, 1.0],
+        'offset':   [0.0, 0.0, 0.0],
         'init_rad': FROG_POSE
     },
 
@@ -62,6 +64,7 @@ PIN_MAP = {
         'kit': 'rear',
         'pins':     [0, 1, 2],    
         'dirs':     [-1.0, -1.0, -1.0],
+        'offset':   [0.0, 0.0, 0.0],
         'init_rad': FROG_POSE
     },
 
@@ -72,6 +75,7 @@ PIN_MAP = {
         'kit': 'rear',
         'pins':     [15, 14, 13],       
         'dirs':     [1.0, 1.0, -1.0],
+        'offset':   [0.0, 0.0, 0.0],
         'init_rad': FROG_POSE
     }
 }

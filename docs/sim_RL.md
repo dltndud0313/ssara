@@ -327,3 +327,113 @@ self.terminations.base_contact.params["sensor_cfg"].body_names =
 > 얘는 그냥 기존 거 들고와서 쓰고, 젬미니한테 이거에 맞게 코드 리팩터링을 맡기는 게 나을 듯
 
 ### 2. `rough_env.py`
+
+---
+
+## 8. 학습 시 로봇이 움직이지 않는 원인 분석 (2026-02-06)
+
+`scripts/train_unsensored_rough.sh` 스크립트 (태스크: `Isaac-Velocity-Rough-NoSensor-Spot-Micro-v0`) 실행 시 로봇이 제자리에서 거의 움직이지 않는 문제에 대한 종합 분석입니다.
+
+### 8.1 rough_env_cfg_no_sensor.py
+
+**파일:** `data/train_myrobot/config/spot_micro/rough_env_cfg_no_sensor.py`
+
+| 항목 | 원인 | 심각도 |
+|------|------|--------|
+| 센서 제거 | `height_scan = None`, `contact_forces = None`으로 설정되어 로봇이 환경 인식 불가. "blind policy" 학습 난이도 매우 높음 | ⚠️ 중간 |
+
+> [!IMPORTANT]
+> NoSensor 환경은 학습 난이도가 매우 높습니다. 센서 있는 환경(`Isaac-Velocity-Rough-Spot-Micro-v0`)에서 먼저 학습 후 전이학습을 권장합니다.
+
+### 8.2 rough_env_cfg.py (핵심)
+
+**파일:** `data/train_myrobot/config/spot_micro/rough_env_cfg.py`
+
+| 항목 | 현재 설정 | 권장 설정 | 원인 |
+|------|----------|----------|------|
+| **lin_vel_x** | `(-0.2, 0.4)` | `(-0.4, 0.4)` | 속도 범위가 너무 좁아 정적 정책 유도 |
+| **lin_vel_y** | `(-0.1, 0.1)` | `(-0.2, 0.2)` | 측면 이동 범위 부족 |
+| **ang_vel_z** | `(-0.3, 0.3)` | `(-0.6, 0.6)` | 회전 속도 범위 부족 |
+| **action scale** | `0.25` | `0.5~1.0` | 너무 작아 관절 움직임이 미미함 |
+| **push_robot** | `None` | 활성화 권장 | 외력 이벤트 비활성화로 다양한 상황 학습 불가 |
+| **track_lin_vel_xy_exp.weight** | `3.0` | `5.0~7.0` | 속도 추종 보상 가중치가 낮음 |
+| **feet_air_time.weight** | `0.01` | `0.5~5.0` | ⚡ **핵심**: 발 공중 시간 보상이 너무 낮아 걷기 동작 학습 X |
+| **undesired_contacts** | `None` | 활성화 권장 | 원치 않는 접촉 페널티 없음 |
+
+> [!CAUTION]
+> `feet_air_time.weight = 0.01`은 **매우 낮은 값**입니다. 참조 환경(ohchungmin_ssafy)은 `5.0`을 사용합니다.
+
+### 8.3 spotmicro_quad.py (로봇 모델)
+
+**파일:** `data/train_myrobot/config/spot_micro/spotmicro_quad.py`
+
+| 항목 | 현재 설정 | 권장 설정 | 원인 |
+|------|----------|----------|------|
+| **stiffness** | `40.0` | `20.0~30.0` | P게인이 너무 높아 관절이 뻣뻣함 |
+| **damping** | `5.0` | `0.5~2.0` | D게인이 너무 높아 움직임 억제 |
+| **effort_limit** | `2.2 N·m` | `3.0~5.0 N·m` | 토크 한계가 낮아 강한 움직임 불가 |
+| **velocity_limit** | `7.0 rad/s` | `8.0~10.0 rad/s` | 속도 제한이 낮음 |
+| **linear_damping** | `0.5` | `0.0~0.1` | 강체 선형 감쇠가 너무 높음 |
+| **angular_damping** | `0.5` | `0.0~0.1` | 강체 각속도 감쇠가 너무 높음 |
+
+> [!WARNING]
+> **stiffness=40, damping=5** 조합은 로봇 관절을 매우 뻣뻣하게 만들어 정책이 관절을 움직이기 어렵게 합니다.
+
+### 8.4 rsl_rl_ppo_cfg.py (PPO 설정)
+
+**파일:** `data/train_myrobot/config/spot_micro/agents/rsl_rl_ppo_cfg.py`
+
+| 항목 | 현재 설정 | 권장 설정 | 원인 |
+|------|----------|----------|------|
+| **init_noise_std** | `1.0` | `0.5~1.0` | 초기 노이즈가 높으면 학습 불안정 |
+| **entropy_coef** | `0.0025` | `0.005~0.01` | 엔트로피 계수가 낮아 탐색 부족 |
+| **learning_rate** | `1.0e-3` | `1.0e-4` | 학습률이 높아 불안정할 수 있음 |
+
+### 8.5 robot.usd (USD 모델)
+
+**파일:** `data/train_myrobot/config/spot_micro/robot.usd`
+
+| 항목 | 현재 상태 | 원인 |
+|------|----------|------|
+| **toe 링크 존재** | `*_toe_link` 존재 | `feet_air_time`에서 `.*_foot_link`만 추적하므로 실제 접지점과 불일치 |
+| **관절 구조** | shoulder → leg → foot → toe | 제어 관절과 접촉 센서 바디명 불일치 가능 |
+
+### 8.6 spotmicroai_gen_ros.urdf
+
+**파일:** `data/train_myrobot/config/spot_micro/spotmicroai_gen_ros.urdf`
+
+| 항목 | 값 | 원인 |
+|------|------|------|
+| **shoulder 관절 제한** | `[-0.548, 0.548]` rad (±31°) | 관절 가동 범위가 제한적 |
+| **관절 damping** | 모두 0.05 | Python 설정(5.0)이 덮어써서 100배 차이 |
+
+### 8.7 참조 환경과의 비교 (ohchungmin_ssafy)
+
+**파일:** `references/ohchungmin_ssafy/rough_env_cfg.py`
+
+| 설정 항목 | 현재 환경 | 참조 환경 | 영향 |
+|-----------|----------|----------|------|
+| `track_lin_vel_xy_exp.weight` | 3.0 | **7.0** | 속도 추종 동기 부족 |
+| `track_ang_vel_z_exp.weight` | 0.75 | **2.5** | 회전 동기 부족 |
+| `feet_air_time.weight` | 0.01 | **5.0** | ⚡ **핵심 차이**: 걷기 동작 학습 X |
+| `lin_vel_z_l2` | 없음 | **-0.5** | 수직 속도 페널티 없음 |
+| `ang_vel_xy_l2` | 없음 | **-0.05** | 롤/피치 각속도 페널티 없음 |
+| `base_height_l2` | 없음 | **-5.0** | 높이 유지 보상 없음 |
+| `joint_deviation_l1` | 없음 | **-0.25** | 기본 자세 유지 보상 없음 |
+| `undesired_contacts` | None | **-5.0** | 원치 않는 접촉 페널티 없음 |
+
+### 8.8 권장 수정 사항
+
+**1순위 (필수)**
+1. `rough_env_cfg.py`: `feet_air_time.weight` → `0.01` → `5.0`
+2. `spotmicro_quad.py`: `stiffness` → `40.0` → `25.0`, `damping` → `5.0` → `1.0`
+3. `rough_env_cfg.py`: `action_scale` → `0.25` → `0.5`
+
+**2순위 (권장)**
+4. `rough_env_cfg.py`: `track_lin_vel_xy_exp.weight` → `3.0` → `5.0`
+5. `rough_env_cfg.py`: 안정성 보상 추가 (`base_height_l2`, `lin_vel_z_l2` 등)
+6. `rough_env_cfg.py`: 속도 범위 확대
+
+**3순위 (테스트 필요)**
+7. 센서 있는 환경(`Isaac-Velocity-Rough-Spot-Micro-v0`)으로 먼저 학습
+8. `feet_air_time`의 body_names를 `.*_toe_link`로 변경 (실제 접지점)
