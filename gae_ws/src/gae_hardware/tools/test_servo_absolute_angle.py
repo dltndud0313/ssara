@@ -9,12 +9,16 @@ from adafruit_servokit import ServoKit
 # ---------------------------------------------------------
 # [설정 파일 Import]
 # ---------------------------------------------------------
+# 현재 위치: .../gae_hardware/tools/
 current_dir = os.path.dirname(os.path.abspath(__file__))
-config_dir = os.path.abspath(os.path.join(current_dir, '../config'))
+
+# 목표 위치: .../gae_hardware/gae_hardware/config/
+# (상위 폴더로 이동 후 gae_hardware/config 진입)
+config_dir = os.path.abspath(os.path.join(current_dir, '../gae_hardware/config'))
 sys.path.append(config_dir)
 
 try:
-    import hardware_config as hw
+    import hardware_config_test as hw
     print(f"✅ 설정 파일 로드 성공: {config_dir}/hardware_config.py")
 except ImportError:
     print(f"❌ 설정 파일을 찾을 수 없습니다. 경로를 확인하세요: {config_dir}")
