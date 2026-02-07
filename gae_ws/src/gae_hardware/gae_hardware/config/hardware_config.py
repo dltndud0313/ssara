@@ -32,7 +32,11 @@ SERVO_ACTUATION_RANGE = 180
 # 나중에 자세를 바꿀 때 이 값만 수정하면 4다리에 모두 적용됩니다.
 # Foot(무릎), Leg(허벅지), Shoulder(어깨)
 FROG_POSE = [-1.4, 0.7, 0.0]
-CHECK_SHOULDER_POSE = [0.0, 0.0, 0.4]
+
+# ✅ [NEW] 오프셋이 적용된 수직 정자세 (Input 값)
+# 여기에 [0,0,0]을 넣으면, 메인 코드의 공식에 의해
+# 실제로는 (0 + Offset) + 90도로 움직여서 "칼각 수직"을 잡게 됩니다.
+ALL_ZERO_POSE = [0.0, 0.0, 0.0]
 
 PIN_MAP = {
     # -----------------------------------------------------
@@ -41,8 +45,9 @@ PIN_MAP = {
     'front-left': {
         'kit': 'front',
         'pins':     [15, 14, 13],    
-        'dirs':     [1.0, 1.0, 1.0], # [Check] Shoulder 미검증
-        'init_rad': FROG_POSE
+        'dirs':     [1.0, 1.0, -1.0], # shoulder 방향 반대 주의
+        'offset':   [9.0, -7.5, 4.3],
+        'init_rad': ALL_ZERO_POSE
     },
 
     # -----------------------------------------------------
@@ -51,8 +56,9 @@ PIN_MAP = {
     'front-right': {
         'kit': 'front',
         'pins':     [0, 1, 2],       
-        'dirs':     [-1.0, -1.0, 1.0], # [Check] Shoulder 미검증
-        'init_rad': FROG_POSE
+        'dirs':     [-1.0, -1.0, 1.0],
+        'offset':   [12.5, 4.4, -9.7],
+        'init_rad': ALL_ZERO_POSE
     },
 
     # -----------------------------------------------------
@@ -61,8 +67,9 @@ PIN_MAP = {
     'rear-left': {
         'kit': 'rear',
         'pins':     [15, 14, 13],    
-        'dirs':     [1.0, 1.0, -1.0], # [Check] Shoulder 미검증
-        'init_rad': FROG_POSE
+        'dirs':     [1.0, 1.0, 1.0], # shoulder 방향 반대 주의
+        'offset':   [7.8, -2.0, -3.0],
+        'init_rad': ALL_ZERO_POSE
     },
 
     # -----------------------------------------------------
@@ -71,8 +78,9 @@ PIN_MAP = {
     'rear-right': {
         'kit': 'rear',
         'pins':     [0, 1, 2],       
-        'dirs':     [-1.0, -1.0, -1.0], # [Check] Shoulder 미검증
-        'init_rad': FROG_POSE
+        'dirs':     [-1.0, -1.0, -1.0],
+        'offset':   [7.8, -6.0, -2.8],
+        'init_rad': ALL_ZERO_POSE
     }
 }
 
