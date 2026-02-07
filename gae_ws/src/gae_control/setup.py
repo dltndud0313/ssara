@@ -33,6 +33,7 @@ setup(
         'console_scripts': [
             # 나중에 노드 실행 파일 등록하는 곳
             # 'node_name = gae_control.node_file:main'
+            'imu_state_estimator = gae_control.imu_state_estimator:main',
         ],
     },
 )

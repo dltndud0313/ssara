@@ -1,4 +1,4 @@
-# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.1)
+# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.3)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -139,9 +139,9 @@ git config --local user.email "your_email@example.com"
 파이썬(.py) 코드만 수정했다면 colcon build를 다시 할 필요가 없습니다! (단, --symlink-install 옵션으로 빌드했을 경우에만 해당)
 > 
 
-## 3. 소프트웨어 환경 요약 (v2.1)
+## 3. 소프트웨어 환경 요약 (v2.3)
 
-이미지(`gae-system:v2.0`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+이미지(`gae-system:v2.3`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
@@ -165,8 +165,9 @@ git config --local user.email "your_email@example.com"
 | **Torch2TRT** | 0.5.0 | **⭐ 중요:** PyTorch 모델을 TensorRT로 변환해주는 툴. (추론 속도 3~5배 향상 가능) |
 | **Ultralytics** | **8.4.9** | **YOLOv8** 공식 라이브러리. (객체 인식 구현 시 사용) |
 | **faster-whisper** | **1.2.1** | **OpenAI Whisper**의 고속 추론 버전. (CTranslate2 기반 최적화) |
-| **openai** | **2.16.0** | **🆕 LLM Interface.** GPT API 연동 클라이언트. (NumPy < 2.0 호환) |
 | **NumPy** | **1.26.4** | **⚠️ 중요:** PyTorch/OpenCV 호환성을 위해 **2.0 미만**으로 고정됨. |
+| **openai** | **2.16.0** | **LLM Interface.** AI 비서 구현용. |
+
 - **비전 및 센서 (Vision & Sensors)**
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
@@ -182,7 +183,7 @@ git config --local user.email "your_email@example.com"
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
 | **SpeechRecognition** | **3.14.5** | 오디오 입력 및 음성 인식 전처리 라이브러리 |
-| **PyAudio** | **0.2.11** | 마이크 하드웨어 제어 및 입출력 담당 (PortAudio 기반) |
+| **PyAudio** | **0.2.14** | 마이크 하드웨어 제어 및 입출력 담당 (PortAudio 기반) |
 | **gTTS** | **2.5.4** | **Google Text-to-Speech.** 텍스트를 음성(mp3)으로 변환하는 라이브러리. |
 | **pulseaudio-utils** | 15.99.1 | **시스템 오디오 도구.** `pactl` 명령어로 마이크/스피커 ID 확인 가능. |
 | **SoX** | 14.4.2 | **오디오 처리 툴.** `play`, `rec` 명령어 포함 (mp3 재생 및 변환). |
@@ -193,6 +194,8 @@ git config --local user.email "your_email@example.com"
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
 | **adafruit-circuitpython-servokit** | 1.3.22 | **PCA9685** (서보모터) 제어용. **DS3218MG** 구동 핵심 라이브러리. |
+| **adafruit-extended-bus** | **(Latest / 0.0.0-auto)** | **🆕 I2C Bus Helper.** Jetson의 특정 I2C 포트(Bus 7 등)를 강제로 지정하여 제어하기 위한 리눅스 전용 도구. |
+| **setuptools_scm** | **(Latest)** | **🔧 빌드 의존성.** `adafruit-extended-bus` 설치 시 패키지 메타데이터 생성을 위해 필수적으로 요구되는 도구. |
 | **adafruit-circuitpython-mpu6050** | 1.3.5 | **MPU-6050** IMU 센서 데이터 수신용. Blinka 위에서 동작. |
 | **libgpiod / python3-libgpiod** | (System) | **⭐ 최신 표준:** **HC-SR04P(초음파)** 제어를 위한 리눅스 표준 GPIO 도구. |
 | **adafruit-blinka** | 8.23.0 | CircuitPython 라이브러리를 리눅스에서 쓰게 해주는 미들웨어. |
@@ -206,7 +209,7 @@ git config --local user.email "your_email@example.com"
 | **paho-mqtt** | **2.1.0** | **MQTT 프로토콜** 클라이언트. 로봇(Pub)과 웹 서버(Sub) 간의 실시간 데이터 송수신 담당. |
 | **web_video_server** | (Binary) | **웹 비디오 스트리밍.** ROS 이미지 토픽을 웹 브라우저 호환(MJPEG) 포맷으로 변환하여 실시간 송출. |
 
-## 4. 하드웨어 환경 요약 (v2.1)
+## 4. 하드웨어 환경 요약 (v2.3)
 
 - **컴퓨팅 및 제어 (Computing & Control)**
 
@@ -215,7 +218,8 @@ git config --local user.email "your_email@example.com"
 | **Main Board** | **Jetson Orin Nano 8GB** | 1 | **Robot Brain.** 6-core ARM CPU / 1024-core Ampere GPU. RAM 8GB(Shared). |
 | **Storage** | **Samsung PM9B1 (256GB)** | 1 | **Main Storage (NVMe M.2).** PCIe 4.0 지원. OS, 라이브러리, 데이터셋 저장용 고속 I/O. |
 | **Swap Memory** | **19.7GB (Total)** | 1 | **ZRAM + 16GB NVMe File.** 8GB RAM의 한계를 극복하기 위한 대용량 가상 메모리 구성 완료. (OOM 방지) |
-| **PWM Driver** | **PCA9685** (16-ch) | 2 | **Servo Controller.** I2C 통신. 다리 2개(서보 6개)씩 분산 연결. (주소: `0x40`, `0x41` 예상) |
+| **PWM Driver** | **PCA9685** (16-ch) | 2 | **Servo Controller.** I2C 통신. **0x40(후방), 0x41(전방)** 분산 연결.
+※ *상세 채널 매핑은 4.4 참조.* |
 | **Camera** | **Stereo Camera** | 1 | **Visual Perception.** Depth 정보 취득 및 RTAB-Map 기반 VSLAM 수행. |
 
 - **구동부 (Actuation - Legs)**
@@ -229,8 +233,8 @@ git config --local user.email "your_email@example.com"
 
 | **구분** | **모델명** | **수량** | **설명 및 역할** |
 | --- | --- | --- | --- |
-| **IMU** | **MPU-6050** (6-axis) | 1 | **Body State Estimation.** 가속도/자이로 데이터를 통해 로봇의 기울기(Roll/Pitch) 및 관성 정보 측정. RL 관측(Observation)의 핵심 데이터. |
-| **Ultrasonic** | **HC-SR04P** | 1 | **Obstacle Detection.** 전방 장애물 거리 측정. 3.3V 호환 모델(P) 사용으로 레벨 시프터 없이 GPIO 연결. |
+| **IMU** | **MPU-6050** (6-axis) | 1 | **Body State Estimation.** 가속도/자이로 측정. (Roll/Pitch 추정 및 RL 관측 데이터). |
+| **Ultrasonic** | **HC-SR04P** | 2 | **Obstacle Detection.** 전방 장애물 거리 측정. 3.3V 호환 모델(P) 사용. |
 
 - **전원부 (Power System)**
 
@@ -238,6 +242,17 @@ git config --local user.email "your_email@example.com"
 | --- | --- | --- | --- |
 | **Battery** | **Tenanty 2S LiPo** | 2 | **7.4V 5200mAh.** 1개 장착(교체형). 순간 고전류(서보 12개) 방전 대응. (하나는 예비용) |
 | **Step-Down** | **HW-083** (DC-DC) | 2 | **Voltage Regulator.** 배터리 전압(7.4~8.4V)을 서보 적정 전압(6V) 및 로직 전압(5V)으로 강하하여 공급. |
+
+- **서보 모터 상세 핀맵 (Servo Pin Mapping) [중요]**
+    - *코드 생성(Python/C++) 및 제어 로직 작성 시 아래 매핑 테이블을 기준으로 합니다.*
+    - **Joint Index:** [0: Knee, 1: Shoulder, 2: Hip] 순서 (또는 [15: Knee, 14: Shoulder, 13: Hip]).
+
+| **PCA9685 주소** | **다리 위치 (Leg)** | **관절 (Joint) 및 핀 번호 (Pin Channel)** | **비고** |
+| --- | --- | --- | --- |
+| **0x40 (Rear)** | **오른쪽 뒷다리 (RR)** | **무릎(0)**, **어깨(1)**, **골반(2)** | Rear Right |
+| **0x40 (Rear)** | **왼쪽 뒷다리 (RL)** | **무릎(15)**, **어깨(14)**, **골반(13)** | Rear Left |
+| **0x41 (Front)** | **오른쪽 앞다리 (FR)** | **무릎(0)**, **어깨(1)**, **골반(2)** | Front Right |
+| **0x41 (Front)** | **왼쪽 앞다리 (FL)** | **무릎(15)**, **어깨(14)**, **골반(13)** | Front Left |
 
 ## 5. 프로젝트 폴더 구조
 
