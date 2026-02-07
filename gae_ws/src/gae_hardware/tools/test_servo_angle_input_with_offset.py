@@ -15,7 +15,7 @@ config_dir = os.path.abspath(os.path.join(current_dir, '../gae_hardware/config')
 sys.path.append(config_dir)
 
 try:
-    import hardware_config_test as hw
+    import hardware_config as hw
     print(f"✅ 설정 파일 로드 성공: {config_dir}/hardware_config.py")
 except ImportError:
     print(f"❌ 설정 파일을 찾을 수 없습니다. 경로를 확인하세요: {config_dir}")
@@ -27,10 +27,9 @@ except ImportError:
 kit_front = None
 kit_rear = None
 
-# ✅ 현재 로봇의 자세 상태 (Input Degree 기준)
-# [Foot(무릎), Leg(허벅지), Shoulder(어깨)]
-# 초기 상태는 0도(보정된 정자세)라고 가정
-current_input_deg = [0.0, 0.0, 0.0]
+# ✅ [수정] 현재 로봇의 자세(각도)를 저장하는 변수 (초기값 0.0)
+# hw.ALL_ZERO_POSE는 '기준값'으로만 쓰고, 변하는 값은 여기에 저장합니다.
+current_pose = [0.0, 0.0, 0.0] 
 
 def get_joint_info(joint_name_input):
     """ 기존과 동일: 관절 이름 파싱 """
@@ -98,16 +97,18 @@ def apply_whole_pose(input_deg_list, dry_run=False):
 
 def smooth_move(target_rads, duration=1.0, steps=50, dry_run=False):
     """
-    현재 자세(current_input_deg)에서 목표 자세(target_rads)까지
+    현재 자세(current_pose)에서 목표 자세(target_rads)까지
     duration(초) 동안 부드럽게 보간(Interpolation)하여 이동
     """
-    global current_input_deg
+    # ✅ [수정] global hw.XXX 삭제 -> global current_pose 사용
+    global current_pose 
     
     # 1. 목표값 변환 (Radian -> Degree)
     target_deg = [math.degrees(val) for val in target_rads]
     
     # 2. 시작값(Start)과 변화량(Delta) 계산
-    start_deg = list(current_input_deg) # 복사
+    # ✅ [수정] Config 값이 아닌 현재 저장된 자세에서 시작
+    start_deg = list(current_pose) 
     delta_deg = [t - s for t, s in zip(target_deg, start_deg)]
     
     # 3. 시간 계산
@@ -130,14 +131,15 @@ def smooth_move(target_rads, duration=1.0, steps=50, dry_run=False):
         time.sleep(dt)
         
     # 5. 최종 상태 업데이트
-    current_input_deg = list(target_deg)
+    # ✅ [수정] Config 값 훼손 방지 -> 현재 자세 변수 업데이트
+    current_pose = list(target_deg)
     print("✅ Move Complete.")
 
 # ---------------------------------------------------------
 # [Main Function]
 # ---------------------------------------------------------
 def main():
-    print("=== SpotMicro Servo Control (Smooth v2) ===")
+    print("=== SpotMicro Servo Control (Smooth v2.1 Fixed) ===")
     print("Commands:")
     print("   👉 'f' : Smooth Sit (Frog Pose)")
     print("   👉 'r' : Smooth Stand (Reset to 0)")
@@ -145,7 +147,8 @@ def main():
     print("   👉 '<joint> <angle>' : Manual Control (Instant)")
     print("===========================================")
 
-    global kit_front, kit_rear, current_input_deg
+    # ✅ [수정] global 선언부에서 점(.) 제거
+    global kit_front, kit_rear, current_pose
     dry_run = False
 
     try:
@@ -170,8 +173,12 @@ def main():
         # [Init] 초기화: 현재 오프셋 상태(0도)로 즉시 정렬
         # -------------------------------------------------------------
         print("\n🔄 [Init] 초기화: 정자세(0도) 정렬")
-        current_input_deg = [0.0, 0.0, 0.0]
-        apply_whole_pose(current_input_deg, dry_run) # 즉시 적용
+        
+        # ✅ [수정] Config에서 0점 기준을 가져와 current_pose 초기화
+        current_pose = list(hw.ALL_ZERO_POSE) 
+        
+        # 초기 자세 적용
+        apply_whole_pose(current_pose, dry_run) 
         print("✅ Ready.\n")
         
     except Exception as e:
@@ -187,30 +194,28 @@ def main():
                 break
 
             # ---------------------------------------------------------
-            # 2. 개구리 자세 (f) - Smooth Move 적용
+            # 2. 개구리 자세 (f)
             # ---------------------------------------------------------
             elif user_input == 'f':
                 print("\n🐸 [F] Sitting Down (Smooth)...")
                 if hasattr(hw, 'FROG_POSE'):
-                    # 1.0초 동안 천천히 앉음
                     smooth_move(hw.FROG_POSE, duration=1.0, dry_run=dry_run)
                 else:
                     print("⚠️ Config에 FROG_POSE가 없습니다.")
                 continue
 
             # ---------------------------------------------------------
-            # 3. 리셋/정상화 (r) - Smooth Move 적용
+            # 3. 리셋/정상화 (r)
             # ---------------------------------------------------------
             elif user_input == 'r':
                 print("\n🔄 [R] Standing Up (Smooth)...")
-                # 0도(정자세) 라디안 값
-                stand_pose_rad = [0.0, 0.0, 0.0]
-                # 1.0초 동안 천천히 일어남
+                # 0도(정자세) 라디안 값 (Config에 있다면 hw.ALL_ZERO_POSE 써도 됨)
+                stand_pose_rad = hw.ALL_ZERO_POSE 
                 smooth_move(stand_pose_rad, duration=1.0, dry_run=dry_run)
                 continue
 
             # ---------------------------------------------------------
-            # 4. 개별 관절 제어 (Manual) - 디버깅용 (즉시 반응)
+            # 4. 개별 관절 제어 (Manual)
             # ---------------------------------------------------------
             parts = user_input.split()
             if len(parts) < 2:
