@@ -1,4 +1,4 @@
-# 🐕 GAE Robot 통합 개발 환경 가이드 (v2.1)
+# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.1)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -8,42 +8,140 @@
 
 ## 🚀 빠른 시작 (Quick Start)
 
-가장 먼저 `git pull`을 받아 최신 상태로 만들고, 아래 스크립트만 실행하세요.
+팀원들은 본인에게 할당된 폴더에서 아래 절차를 따라주세요. (이미 환경은 관리자가 구성해 두었습니다.)
 
-### 1. 환경 실행
+## 💻 개발자별 할당 정보
 
-- 터미널에서 `gae_ws` 폴더로 이동 후 실행 스크립트를 가동합니다.
-(이 스크립트가 USB, 카메라, GPU 권한을 모두 자동으로 연결합니다.)
+| 이름 | 컨테이너 이름 | 호스트 작업 경로 | ROS_DOMAIN_ID |
+| --- | --- | --- | --- |
+| **정지용** | `jjy092801` | `~/S14P11C101/gae_ws` | 101 |
+| **김태연** | `taeyeon` | `~/workspaces/taeyeon/S14P11C101/gae_ws` | 101 |
+| **이수영** | `sooyoung` | `~/workspaces/sooyoung/S14P11C101/gae_ws` | 101 |
+| **김경한** | `kyunghan` | `~/workspaces/kyunghan/S14P11C101/gae_ws` | 101 |
+| **오충민** | `chungmin` | `~/workspaces/chungmin/S14P11C101/gae_ws` | 101 |
+
+### 1. 컨테이너 접속
+
+- 본인의 이름으로 된 폴더로 이동하여 접속 스크립트를 실행합니다.
+- 이 스크립트를 통해 본인만의 독립된 도커 환경(GPU, 카메라 권한 포함)으로 입장합니다.
+- 본 프로젝트는 Jetson Orin Nano의 자원을 효율적으로 사용하고, 개발자 간의 **Git 충돌 및 ROS2 토픽 간섭을 방지**하기 위해 **1인 1컨테이너/1인 1저장소** 체제로 운영됩니다.
 
 ```bash
-cd ~/gae_ws
+# 1. 본인 작업 폴더로 이동 (예: taeyeon, sooyoung 등)
+cd ~/workspaces/[본인이름]
 
-./run_gae.sh
+# 2. 컨테이너 접속 스크립트 실행
+# chmod +x connect.sh << 권한 거부시 실행
+./connect.sh
+```
 
-colcon build --symlink-install
+### 2. 워크스페이스 빌드 (Container 내부)
 
-# build 에러 뜨면 아래 실행 후 다시 colcon build
+- 도커 터미널(`root@ubuntu:/root/gae_ws#`)이 열리면 아래 명령어를 입력합니다.
+- **주의:** Jetson 메모리 보호를 위해 빌드는 **한 명씩 차례대로** 진행해 주세요.
+
+```bash
+# 1. 워크스페이스 이동
+cd /root/gae_ws
+
+# 2. 전체 패키지 빌드
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+# 만약 빌드 에러(충돌) 발생 시 기존 내역 삭제 후 재빌드
 # rm -rf build install log
 # colcon build --symlink-install
 
+# 3. 환경 변수 적용 (새 터미널을 열 때마다 실행하거나 .bashrc에 등록)
 source install/setup.bash
 ```
 
-### 2. 빌드 (Container 내부)
+## 🛠️ 관리자용 가이드 (Jetson 재부팅 시)
 
-- 도커 터미널(`root@ubuntu...`)이 열리면 바로 빌드
+만약 Jetson이 재부팅되었거나 컨테이너가 멈춘 경우, 관리자(`ssafy`)가 아래 명령어를 한 번 실행해줘야 합니다.
+
+```bash
+# Jetson 터미널
+cd ~/workspaces
+
+# xhost +local:root
+
+docker compose start
+# docker compose start (특정 인원 ID)
+
+# VSCode 접속 후
+cd ~/S14P11C101/gae_ws
+
+./connect.sh
+```
+
+- **도커 이미지 업데이트 시 가이드**
 
 ```python
-# 전체 패키지 빌드
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+# 1. 워크스페이스 이동
+cd ~/workspaces
 
-# 환경 변수 적용 (최초 1회 혹은 새 패키지 추가 시)
-source install/setup.bash
+# 2. X11 시각화 권한 부여 (재부팅 시 필수)
+# xhost +local:root
+
+# 3. 기존 컨테이너 중지 및 제거 (소스 코드는 안전합니다)
+docker compose down
+
+# 4. 새 이미지 기반 컨테이너 생성 및 자동 실행
+# (이 명령어 한 번으로 생성 + 실행(Start)이 동시에 완료됩니다)
+docker compose up -d
+
+# 5. 실행 상태 최종 확인
+docker ps
 ```
+
+- **Ros2 Humble 코드 개발 후 빌드 진행 가이드**
+
+```python
+# 1. 워크스페이스로 이동
+cd ~/gae_ws
+
+# 2. 코드 수정 후 빌드 (특정 패키지만 빌드하는 습관을 들이면 좋습니다)
+colcon build --symlink-install --packages-select gae_control  <-- 예: gae_control 수정 시
+
+# 3. 환경 설정 적용
+source install/setup.bash
+
+# 4. 실행
+ros2 launch gae_control control.launch.py
+```
+
+### 3. Git 협업 규칙
+
+- **개인 설정**: 컨테이너 접속 후 **딱 한 번만** 실행하세요. 이후에는 컨테이너를 껐다 켜도 유지됩니다.
+
+```bash
+git config --local user.name "Your Name"
+git config --local user.email "your_email@example.com"
+```
+
+- **브랜치 관리**: `main` 브랜치에 직접 Push하지 말고, 반드시 본인 브랜치에서 작업 후 PR(Pull Request)을 생성하세요.
+- **최신화**: 작업 시작 전 항상 `git pull`을 받아 팀원들의 변경 사항을 반영하세요.
+
+---
+
+### 💡 팁: 실행이 안 된다면?
+
+만약 `./connect.sh` 실행 시 컨테이너가 꺼져 있다는 메시지가 나오면, 관리자(@jjy092801)에게 **"컨테이너 올려달라"**고 요청하세요!
+
+### 🛠️ 빌드(colcon build)는 언제 다시 하나요?
+
+1. **최초 1회**: 컨테이너를 처음 만들고 접속했을 때 (필수)
+2. **새로운 패키지 추가**: `git pull`을 받았는데 새로운 ROS2 패키지가 생겼을 때
+3. **C++/Msg 수정**: 소스 코드(`.cpp`, `.hpp`)나 커스텀 메시지 파일을 수정했을 때
+4. **빌드 에러 발생**: 원인 모를 빌드 오류가 날 때는 `rm -rf build install log` 후 다시 빌드
+
+> ⚠️ **주의 (Jetson Orin Nano 공통)**
+파이썬(.py) 코드만 수정했다면 colcon build를 다시 할 필요가 없습니다! (단, --symlink-install 옵션으로 빌드했을 경우에만 해당)
+> 
 
 ## 3. 소프트웨어 환경 요약 (v2.1)
 
-이미지(`gae-system:v2.1`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+이미지(`gae-system:v2.0`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
@@ -67,8 +165,8 @@ source install/setup.bash
 | **Torch2TRT** | 0.5.0 | **⭐ 중요:** PyTorch 모델을 TensorRT로 변환해주는 툴. (추론 속도 3~5배 향상 가능) |
 | **Ultralytics** | **8.4.9** | **YOLOv8** 공식 라이브러리. (객체 인식 구현 시 사용) |
 | **faster-whisper** | **1.2.1** | **OpenAI Whisper**의 고속 추론 버전. (CTranslate2 기반 최적화) |
+| **openai** | **2.16.0** | **🆕 LLM Interface.** GPT API 연동 클라이언트. (NumPy < 2.0 호환) |
 | **NumPy** | **1.26.4** | **⚠️ 중요:** PyTorch/OpenCV 호환성을 위해 **2.0 미만**으로 고정됨. |
-
 - **비전 및 센서 (Vision & Sensors)**
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
@@ -175,6 +273,7 @@ source install/setup.bash
     │   ├── 📦 gae_msgs/        # [메시지] 커스텀 msg/srv 인터페이스 정의
     │   │
     │   └── 📦 gae_perception/  # [인식] YOLOv8, SLAM, OpenCV
+    │       ├── 📂 maps/        # vslam 맵 저장
     │       ├── 📂 config/      # 카메라/SLAM 설정 파일
     │       ├── 📂 launch/      # 인식 모듈 개별 실행 파일
     │       └── 📂 weights/     # YOLOv8 학습 가중치 파일 (.pt)
@@ -292,6 +391,51 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ```python
 ssafy@ubuntu:~/gae_ws/src$ sudo chown -R ssafy:ssafy ~/gae_ws/src
+```
+
+- **Jetson Orin Nano I2C 관련**
+
+![Screenshot from 2026-02-04 11-32-31.png](attachment:fe28bd06-8f1f-4608-828d-ff30260ced32:Screenshot_from_2026-02-04_11-32-31.png)
+
+- **NVIDIA Orin Nano의 내부 I2C 인터페이스 매핑**
+
+| 물리 핀 | Jetson pinmux 이름 | SoC I2C 컨트롤러 | Linux 디바이스 |
+| --- | --- | --- | --- |
+| 27 / 28 | i2c2 | **c240000.i2c** | **/dev/i2c-1** |
+| 3 / 5 | i2c8 | c250000.i2c | /dev/i2c-7 |
+- **명령어 예시**
+
+```python
+ssafy@ubuntu:~$ sudo i2cdetect -y -r 7
+[sudo] password for ssafy: 
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: 40 41 -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+70: 70 -- -- -- -- -- -- --                         
+ssafy@ubuntu:~$ sudo i2cdetect -y -r 1
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- UU -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: UU -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --                         
+ssafy@ubuntu:~$ i2cdetect -l
+i2c-0   i2c             3160000.i2c                             I2C adapter
+i2c-1   i2c             c240000.i2c                             I2C adapter
+i2c-2   i2c             3180000.i2c                             I2C adapter
+i2c-4   i2c             Tegra BPMP I2C adapter                  I2C adapter
+i2c-5   i2c             31b0000.i2c                             I2C adapter
+i2c-7   i2c             c250000.i2c                             I2C adapter
+i2c-9   i2c             NVIDIA SOC i2c adapter 0                I2C adapter
+ssafy@ubuntu:~$ 
 ```
 
 ## 8. 협업 컨벤션(규칙)

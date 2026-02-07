@@ -101,7 +101,7 @@
               </svg>
             </div>
             <div class="status-content">
-              <span class="status-value">{{ robotState }}</span>
+              <span class="status-value">{{ robotStateText }}</span>
               <span class="status-label">활동 상태</span>
             </div>
           </div>
@@ -113,19 +113,21 @@
 
     <!-- 하단 네비게이션 -->
     <nav class="bottom-nav">
-      <button class="nav-item active" @click="$router.push('/home')">
+      <button class="nav-item" @click="$router.push('/home')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
         <span>홈</span>
       </button>
-      <button class="nav-item" @click="$router.push('/location')">
+      <button class="nav-item" @click="$router.push('/features')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-          <circle cx="12" cy="10" r="3"/>
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
         </svg>
-        <span>위치</span>
+        <span>기능</span>
       </button>
       <button class="nav-item" @click="$router.push('/history')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -158,7 +160,6 @@ const lastUpdate = ref('');
 // WebSocket 연결 관리
 onMounted(() => {
   robotStore.connectWebSocket();
-  // 실제 스트리밍 연결 시도 (예시)
   startStream();
 });
 
@@ -170,7 +171,7 @@ onUnmounted(() => {
 // 로봇 상태
 const isOnline = computed(() => robotStore.robotStatus.isOnline);
 const currentBattery = computed(() => robotStore.robotStatus.battery || 0);
-const robotState = computed(() => robotStore.robotStatus.state || '대기');
+const robotStateText = computed(() => robotStore.robotStatus.state || '대기');
 
 const batteryClass = computed(() => {
   if (currentBattery.value <= 20) return 'low';
@@ -178,8 +179,8 @@ const batteryClass = computed(() => {
   return 'high';
 });
 
-// 로봇 카메라 MJPEG 스트림 URL
-const ROBOT_STREAM_URL = 'http://192.168.100.246:8080/stream?topic=/camera/color/image_raw&type=mjpeg&width=560&height=315';
+// 로봇 카메라 MJPEG 스트림 URL (프록시를 통해 CORS 우회)
+const ROBOT_STREAM_URL = '/robot-stream/stream?topic=/camera/color/image_raw&type=mjpeg&width=560&height=315';
 
 // 스트림 시작
 const startStream = () => {
@@ -229,7 +230,7 @@ const updateLastTime = () => {
 <style scoped>
 .screen-view {
   min-height: 100vh;
-  background: var(--bg-secondary);
+  background: #f2f4f6;
   padding-bottom: 80px;
 }
 
@@ -238,7 +239,7 @@ const updateLastTime = () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: var(--bg-primary);
+  background: #fff;
 }
 
 .back-btn {
@@ -248,13 +249,13 @@ const updateLastTime = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #6b7684;
 }
 
 .header-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #191f28;
 }
 
 .header-spacer {
@@ -298,18 +299,18 @@ const updateLastTime = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gray-400);
+  color: #6b7684;
 }
 
 .placeholder-text {
   font-size: 15px;
   font-weight: 500;
-  color: var(--gray-300);
+  color: #adb5bd;
 }
 
 .placeholder-sub {
   font-size: 13px;
-  color: var(--gray-500);
+  color: #6b7684;
 }
 
 .video-stream {
@@ -335,16 +336,16 @@ const updateLastTime = () => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: var(--bg-tertiary);
+  background: #f2f4f6;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: #8b95a1;
 }
 
 .status-badge.online {
-  background: var(--success-light);
-  color: var(--success);
+  background: #e6f7f2;
+  color: #20c997;
 }
 
 .dot {
@@ -356,7 +357,7 @@ const updateLastTime = () => {
 
 .last-update {
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: #8b95a1;
 }
 
 /* 컨트롤 섹션 */
@@ -367,7 +368,7 @@ const updateLastTime = () => {
 .section-title {
   font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #191f28;
   margin-bottom: 14px;
 }
 
@@ -383,14 +384,15 @@ const updateLastTime = () => {
   align-items: center;
   gap: 8px;
   padding: 16px 12px;
-  background: var(--bg-primary);
+  background: #fff;
   border-radius: 16px;
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .control-btn:active:not(:disabled) {
   transform: scale(0.97);
-  background: var(--gray-50);
+  background: #f8f9fa;
 }
 
 .control-btn:disabled {
@@ -407,24 +409,24 @@ const updateLastTime = () => {
 }
 
 .control-icon.refresh {
-  background: var(--primary-light);
-  color: var(--primary);
+  background: #e7f1ff;
+  color: #3182f6;
 }
 
 .control-icon.fullscreen {
-  background: var(--success-light);
-  color: var(--success);
+  background: #e6f7f2;
+  color: #20c997;
 }
 
 .control-icon.capture {
-  background: var(--warning-light);
-  color: var(--warning);
+  background: #fff3e0;
+  color: #F59E0B;
 }
 
 .control-btn span {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #6b7684;
 }
 
 /* 상태 섹션 */
@@ -443,8 +445,9 @@ const updateLastTime = () => {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: var(--bg-primary);
+  background: #fff;
   border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .status-icon {
@@ -457,13 +460,13 @@ const updateLastTime = () => {
 }
 
 .status-icon.battery.high {
-  background: var(--success-light);
-  color: var(--success);
+  background: #e6f7f2;
+  color: #20c997;
 }
 
 .status-icon.battery.medium {
-  background: var(--warning-light);
-  color: var(--warning);
+  background: #fff3e0;
+  color: #F59E0B;
 }
 
 .status-icon.battery.low {
@@ -472,8 +475,8 @@ const updateLastTime = () => {
 }
 
 .status-icon.state {
-  background: var(--primary-light);
-  color: var(--primary);
+  background: #e7f1ff;
+  color: #3182f6;
 }
 
 .status-content {
@@ -484,12 +487,12 @@ const updateLastTime = () => {
 .status-value {
   font-size: 16px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #191f28;
 }
 
 .status-label {
   font-size: 12px;
-  color: var(--text-tertiary);
+  color: #8b95a1;
   margin-top: 2px;
 }
 
@@ -506,8 +509,9 @@ const updateLastTime = () => {
   max-width: 600px;
   margin: 0 auto;
   height: 72px;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--gray-100);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid #e5e8eb;
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -525,7 +529,7 @@ const updateLastTime = () => {
   width: 100%;
   min-width: 0;
   padding: 8px 0;
-  color: var(--gray-400);
+  color: #b0b8c1;
 }
 
 .nav-item svg {
@@ -539,6 +543,6 @@ const updateLastTime = () => {
 }
 
 .nav-item.active {
-  color: var(--primary);
+  color: #3182f6;
 }
 </style>
