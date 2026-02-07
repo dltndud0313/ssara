@@ -68,7 +68,7 @@ def check_apt_package(package_name):
 
 def run_system_check():
     print("="*60)
-    print("🚀 GAE Robot 환경 진단 (v2.1 Updated)")
+    print("🚀 GAE Robot 환경 진단 (v2.3 Updated)")
     print("="*60)
 
     # 0. System & Core
@@ -89,27 +89,27 @@ def run_system_check():
             elif "R32" in l4t_ver:
                 jetpack_ver = "JetPack 4.x (Nano/TX2/Ubuntu 18.04)"
                 
-        print(f"[✅ OK] JetPack Version              : {jetpack_ver}")
+        print(f"[✅ OK] JetPack Version             : {jetpack_ver}")
         print(f"[✅ OK] L4T Driver Version          : {l4t_ver}")
     except FileNotFoundError:
-        print(f"[⚠️ INFO] Jetson L4T Check           : 파일 없음 (일반 PC 또는 Docker?)")
+        print(f"[⚠️ INFO] Jetson L4T Check            : 파일 없음 (일반 PC 또는 Docker?)")
     
     # OS Check
     try:
         with open("/etc/os-release") as f:
             lines = f.readlines()
             name = next((line.split("=")[1].strip().strip('"') for line in lines if line.startswith("PRETTY_NAME")), "Linux")
-            print(f"[✅ OK] OS Check                     : {name}")
+            print(f"[✅ OK] OS Check                      : {name}")
     except:
-        print(f"[⚠️ INFO] OS Check                     : {platform.system()} {platform.release()}")
+        print(f"[⚠️ INFO] OS Check                      : {platform.system()} {platform.release()}")
 
     # Python Version
     py_ver = sys.version.split()[0]
-    print(f"[✅ OK] Python Version               : {py_ver} (Target: 3.10.12)")
+    print(f"[✅ OK] Python Version                : {py_ver} (Target: 3.10.12)")
 
     # ROS Distro
     ros_distro = os.environ.get("ROS_DISTRO", "Not Found")
-    print(f"[{'✅ OK' if ros_distro == 'humble' else '❌ NO'}] ROS 2 Distro                 : {ros_distro} (Target: Humble)")
+    print(f"[{'✅ OK' if ros_distro == 'humble' else '❌ NO'}] ROS 2 Distro                  : {ros_distro} (Target: Humble)")
 
     # Core Tools
     check_command("nvcc", "--version") # CUDA
@@ -122,9 +122,9 @@ def run_system_check():
     torch_mod = check_python_package("torch", "torch", "2.2.0")
     if torch_mod:
         cuda_ok = torch_mod.cuda.is_available()
-        print(f"   ㄴ CUDA 가속 활성화?             : {'✅ YES' if cuda_ok else '❌ NO (GPU 안 잡힘!)'}")
+        print(f"   ㄴ CUDA 가속 활성화?              : {'✅ YES' if cuda_ok else '❌ NO (GPU 안 잡힘!)'}")
         if cuda_ok:
-            print(f"   ㄴ 감지된 GPU 장치               : {torch_mod.cuda.get_device_name(0)}")
+            print(f"   ㄴ 감지된 GPU 장치                : {torch_mod.cuda.get_device_name(0)}")
 
     check_python_package("torchvision", "torchvision", "0.17.2")
     check_python_package("ultralytics", "ultralytics", "8.4.9")
@@ -135,16 +135,16 @@ def run_system_check():
     # 2. Vision & Sensors
     print("\n---------- 2. Vision & Sensors ----------")
     if cv2:
-        print(f"[✅ OK] OpenCV (System)             : {cv2.__version__} (Target: 4.9.0)")
+        print(f"[✅ OK] OpenCV (System)              : {cv2.__version__} (Target: 4.9.0)")
         try:
             count = cv2.cuda.getCudaEnabledDeviceCount()
-            print(f"   ㄴ OpenCV CUDA 가속?             : {'✅ YES' if count > 0 else '❌ NO (CPU 전용 - 성능저하 주의)'}")
+            print(f"   ㄴ OpenCV CUDA 가속?              : {'✅ YES' if count > 0 else '❌ NO (CPU 전용 - 성능저하 주의)'}")
             # if count > 0:
                 # cv2.cuda.printCudaDeviceInfo(0) 
         except:
             print(f"   ㄴ OpenCV CUDA 확인 불가")
     else:
-        print(f"[❌ MISSING] OpenCV (System)             : import 실패")
+        print(f"[❌ MISSING] OpenCV (System)              : import 실패")
 
     check_ros_package("astra_camera")
     check_ros_package("astra_camera_msgs")
@@ -154,7 +154,7 @@ def run_system_check():
     # 3. Audio & Voice
     print("\n---------- 3. Audio & Voice ----------")
     check_python_package("SpeechRecognition", "speech_recognition", "3.14.5")
-    check_python_package("PyAudio", "pyaudio", "0.2.11")
+    check_python_package("PyAudio", "pyaudio", "0.2.14")
     check_python_package("gTTS", "gtts", "2.5.4")
     
     # Audio System Tools
@@ -170,6 +170,10 @@ def run_system_check():
     check_python_package("adafruit-circuitpython-mpu6050", "adafruit_mpu6050", "1.3.5")
     check_python_package("adafruit-blinka", "adafruit_blinka", "8.23.0")
     check_python_package("smbus2", "smbus2", "0.6.0")
+    
+    # [NEW] v2.2 Added Hardware Libraries
+    check_python_package("adafruit-extended-bus", "adafruit_extended_bus") 
+    check_python_package("setuptools_scm", "setuptools_scm") 
     
     # New Standard GPIO
     # [참고] python3-libgpiod는 'gpiod'로 import 됩니다.
