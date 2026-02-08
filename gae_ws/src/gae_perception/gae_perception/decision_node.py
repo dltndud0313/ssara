@@ -6,12 +6,13 @@ from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge
 import json
 import numpy as np
+import time
 
 class DecisionNode(Node):
     def __init__(self):
         super().__init__('decision_node')
 
-        # [구독] YOLO 객체 인식 결과 수신
+        # [구독] YOLO 결과 수신
         self.yolo_sub = self.create_subscription(
             String, 
             '/gae_perception/yolo_result', 
@@ -19,7 +20,6 @@ class DecisionNode(Node):
             10
         )
         
-        # [구독] Depth 카메라 이미지 수신 (물리적 거리 측정용)
         self.depth_sub = self.create_subscription(
             Image, 
             '/camera/depth/image_raw', 
@@ -27,142 +27,86 @@ class DecisionNode(Node):
             10
         )
         
-        # [발행] 로봇 이동 명령 (Twist) 전송 토픽: /cmd_vel
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
-        
         self.bridge = CvBridge()
         
-        # [상태 변수] 3방향 거리 데이터 (초기값: 99.9m)
-        self.dist_left = 99.9
         self.dist_center = 99.9
-        self.dist_right = 99.9
         
-        self.detected_objects = []       # YOLO 인식 객체 리스트
+        # ★ [핵심] 기억력 변수 추가
+        # 빨간불을 마지막으로 본 시간을 기록합니다.
+        self.last_red_time = 0.0 
+        self.last_green_time = 0.0
         
-        # [타이머] 0.1초마다 판단 로직 실행
+        # 0.1초마다 판단 (10Hz)
         self.create_timer(0.1, self.control_loop)
-        
-        print("[System] Decision Node Started. Logic: Obstacle Avoidance + Traffic Rules")
+        self.get_logger().info("🧠 Decision Node (기억력 강화판) 시작!")
 
     def depth_callback(self, msg):
-        """
-        깊이 카메라 이미지를 받아 화면을 좌/중/우 3분할하고,
-        각 영역의 장애물 거리를 계산하여 업데이트합니다.
-        """
         try:
-            # ROS 이미지를 OpenCV 포맷으로 변환
             depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
             h, w = depth_image.shape
+            center_crop = depth_image[h//3 : 2*h//3, w//3 : 2*w//3]
+            valid = center_crop[center_crop > 0]
+            if len(valid) > 0:
+                self.dist_center = np.median(valid) / 1000.0
+            else:
+                self.dist_center = 99.9
+        except Exception:
+            pass
+
+    def yolo_callback(self, msg):
+        """
+        YOLO 데이터를 받아서 '마지막으로 본 시간'만 갱신합니다.
+        """
+        try:
+            objects = json.loads(msg.data)
             
-            # 관심 영역(ROI) 설정: 바닥과 천장을 제외한 화면 중간 1/3 영역만 사용
-            roi_y_start = h // 3
-            roi_y_end = 2 * h // 3
-            roi_img = depth_image[roi_y_start:roi_y_end, :]
-            
-            # 가로 영역을 3등분 (좌측, 중앙, 우측)
-            w_third = w // 3
-            
-            # 1. Left Zone (왼쪽)
-            left_crop = roi_img[:, 0:w_third]
-            self.dist_left = self.get_median_dist(left_crop)
-            
-            # 2. Center Zone (중앙 - 주행 경로)
-            center_crop = roi_img[:, w_third:2*w_third]
-            self.dist_center = self.get_median_dist(center_crop)
-            
-            # 3. Right Zone (오른쪽)
-            right_crop = roi_img[:, 2*w_third:w]
-            self.dist_right = self.get_median_dist(right_crop)
+            for obj in objects:
+                name = obj.get('class', '').lower() 
+                
+                # 빨간불을 보면 -> 현재 시간을 기록! (도장 쾅!)
+                if 'red' in name or 'stop' in name:
+                    self.last_red_time = time.time()
+                    # self.get_logger().info(f"🚨 빨간불 감지됨! ({name})")
+                    
+                # 초록불을 보면 -> 현재 시간을 기록!
+                elif 'green' in name:
+                    self.last_green_time = time.time()
             
         except Exception:
             pass
 
-    def get_median_dist(self, crop_img):
-        """
-        이미지 영역에서 0(에러값)을 제외한 유효 거리의 중간값을 계산합니다.
-        평균값보다 노이즈(튀는 값)에 강합니다.
-        """
-        valid = crop_img[crop_img > 0]
-        if len(valid) > 0:
-            return np.median(valid) / 1000.0 # mm 단위를 m 단위로 변환
-        else:
-            return 99.9 # 유효한 값이 없으면 장애물 없음으로 간주
-
-    def yolo_callback(self, msg):
-        """
-        YOLO 노드에서 보낸 JSON 데이터를 파싱하여 리스트에 저장합니다.
-        """
-        try:
-            self.detected_objects = json.loads(msg.data)
-        except ValueError:
-            self.detected_objects = []
-
     def control_loop(self):
-        """
-        센서 데이터를 종합하여 로봇의 행동을 결정하고 명령을 내립니다.
-        """
         twist = Twist()
+        current_time = time.time()
         
-        # --- [1단계] 상황 인지 (Perception) ---
-        is_at_stop_point = False
-        traffic_light = "NONE" # 상태: RED, GREEN, NONE
-        
-        for obj in self.detected_objects:
-            name = obj['class'].lower()
-            dist = obj['dist_m']
-            score = obj['score']
-            
-            # 스탑포인트 인식: 이름에 stop 포함, 거리 1.2m 이내, 신뢰도 50% 이상
-            if "stop" in name and dist < 1.2 and score > 0.5:
-                is_at_stop_point = True
-            
-            # 신호등 인식: 거리 2.5m 이내
-            if dist < 2.5:
-                if "red" in name:
-                    traffic_light = "RED"
-                elif "green" in name:
-                    traffic_light = "GREEN"
-
-        # --- [2단계] 행동 결정 (Decision making with Priority) ---
-        
-        # [우선순위 0] 장애물 회피 (Obstacle Avoidance)
-        # 전방 1.0m 이내에 장애물(사람, 벽, 나무 등) 감지 시 회피 기동
-        if self.dist_center < 1.0:
-            print(f"[AVOID] Obstacle detected at {self.dist_center:.2f}m. Calculating path...")
-            
-            # 안전을 위해 전진 속도 정지
+        # 1. 장애물 감지 (0.5m 이내 - 너무 예민하지 않게 줄임)
+        if self.dist_center < 0.5:
+            print(f"[AVOID] 🚧 장애물 감지! ({self.dist_center:.2f}m)")
             twist.linear.x = 0.0
+            twist.angular.z = 0.0
+
+        # 2. 신호등 판단 (기억력 사용!)
+        # "지금 빨간불이 보여?" 가 아니라
+        # "최근 2초 안에 빨간불 본 적 있어?" 라고 물어봅니다.
+        elif (current_time - self.last_red_time) < 2.0:
+            print(f"[TRAFFIC] 🚨 빨간불 대기 중... (유효시간 2초)")
+            twist.linear.x = 0.0
+            twist.angular.z = 0.0
             
-            # 좌측과 우측 거리 비교하여 더 넓은 쪽으로 회전
-            if self.dist_left > self.dist_right:
-                print(f"    -> Turning Left (L:{self.dist_left:.1f}m > R:{self.dist_right:.1f}m)")
-                twist.angular.z = 0.5  # 좌회전 (양수)
-            else:
-                print(f"    -> Turning Right (L:{self.dist_left:.1f}m < R:{self.dist_right:.1f}m)")
-                twist.angular.z = -0.5 # 우회전 (음수)
-                
-        # [우선순위 1] 교통 법규 준수 (Traffic Rules)
-        elif is_at_stop_point:
-            if traffic_light == "RED":
-                # 빨간불 인식 시 정지
-                print("[TRAFFIC] Stop Point detected. Signal: RED -> STOP")
-                twist.linear.x = 0.0
-            elif traffic_light == "GREEN":
-                # 초록불 인식 시 통과
-                print("[TRAFFIC] Stop Point detected. Signal: GREEN -> GO")
-                twist.linear.x = 0.1
-            else:
-                # 스탑포인트는 있으나 신호등이 감지되지 않음 -> 통과
-                print("[TRAFFIC] Stop Point detected. Signal: NONE -> PASSING")
-                twist.linear.x = 0.1
-
-        # [우선순위 2] 일반 주행 (Normal Drive)
+        # 3. 초록불 판단
+        # "최근 1초 안에 초록불 봤어?"
+        elif (current_time - self.last_green_time) < 1.0:
+            print("[TRAFFIC] 🟢 초록불! 주행합니다.")
+            twist.linear.x = 0.1  # 직진 속도
+            twist.angular.z = 0.0
+            
+        # 4. 아무것도 없을 때 (기본 주행)
         else:
-            print("[DRIVE] Path Clear. Moving Forward.")
-            twist.linear.x = 0.1  # 기본 주행 속도
-            twist.angular.z = 0.0 # 직진
+            print("[DRIVE] 전방 이상 무. 직진.")
+            twist.linear.x = 0.1
+            twist.angular.z = 0.0
 
-        # 최종 계산된 속도 명령 발행
         self.cmd_pub.publish(twist)
 
 def main():
