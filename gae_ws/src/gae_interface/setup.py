@@ -28,6 +28,12 @@ setup(
             'voice_tiny = gae_interface.stt_module_tiny:main',
             'voice_base = gae_interface.stt_module_base:main',
             'voice_small = gae_interface.stt_module_small:main',
+            'voice_gpt = gae_interface.stt_module_gpt:main',
+            'voice_mqtt = gae_interface.stt_module_mqtt:main',
+            'voice_final = gae_interface.stt_module_final:main',
+            'voice_map = gae_interface.stt_module_map:main',
+            'voice_fast = gae_interface.stt_module_fast:main',
+            'pose_bridge_fix = gae_interface.pose_bridge_fix:main',
         ],
     },
 )

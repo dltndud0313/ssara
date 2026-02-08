@@ -10,10 +10,12 @@ import os
 import io
 import wave
 import subprocess
+import paho.mqtt.client as mqtt
+from datetime import datetime
 
 class VoiceAssistant:
     def __init__(self, mp3_dir):
-        print("🤖 AI 모델 로딩 중... (Whisper Base)")
+        print("🤖 AI 모델 로딩 중... (Whisper Base + MQTT)")
         self.model = WhisperModel("base", device="cpu", compute_type="int8")
         self.recognizer = sr.Recognizer()
         self.recognizer.energy_threshold = 2000
@@ -78,22 +80,44 @@ class VoiceNode(Node):
         self.mp3_dir = os.path.join(pkg_path, "mp3")
         os.makedirs(self.mp3_dir, exist_ok=True)
         
-        # 발행 토픽
+        # 대화 로그
+        self.log_dir = os.path.join(pkg_path, "conversation_logs")
+        os.makedirs(self.log_dir, exist_ok=True)
+        self.log_file = os.path.join(self.log_dir, f"log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
+        self.log_conversation("=== 음성 인터페이스 시작 (MQTT 통합) ===")
+        
+        # ROS2 토픽
         self.command_pub = self.create_publisher(String, '/gae_interface/voice/command', 10)
         self.response_pub = self.create_publisher(String, '/gae_interface/voice/response', 10)
         self.status_pub = self.create_publisher(String, '/gae_interface/voice/status', 10)
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         
-        # 🔥 YOLO 결과 구독 (클래스 ID)
+        # YOLO 구독
         self.yolo_sub = self.create_subscription(
             Int32,
-            '/yolo_detection/class_id',  # YOLO 클래스 ID 토픽
+            '/yolo_detection/class_id',
             self.yolo_callback,
             10
         )
         
         self.latest_object = "아무것도 없습니다"
         self.latest_class_id = None
+        
+        # MQTT 클라이언트 설정
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_client.on_connect = self.on_mqtt_connect
+        self.mqtt_client.on_message = self.on_mqtt_message
+        
+        # MQTT 브로커 연결 (localhost 기본, 필요시 IP 변경)
+        mqtt_broker = os.getenv('MQTT_BROKER', 'localhost')
+        mqtt_port = int(os.getenv('MQTT_PORT', '1883'))
+        
+        try:
+            self.mqtt_client.connect(mqtt_broker, mqtt_port, 60)
+            self.mqtt_client.loop_start()
+            self.get_logger().info(f"📡 MQTT 연결 성공: {mqtt_broker}:{mqtt_port}")
+        except Exception as e:
+            self.get_logger().error(f"❌ MQTT 연결 실패: {e}")
         
         self.bot = VoiceAssistant(self.mp3_dir)
         
@@ -102,58 +126,88 @@ class VoiceNode(Node):
         self.voice_thread.start()
         
         self.publish_status("준비 완료")
-        print("✅ 시각장애인 안내 로봇 준비 완료!")
+        print("✅ 시각장애인 안내 로봇 준비 완료 (MQTT 통합)")
+
+    def on_mqtt_connect(self, client, userdata, flags, rc):
+        """MQTT 연결 성공 시 토픽 구독"""
+        self.get_logger().info(f"📡 MQTT 연결 코드: {rc}")
+        client.subscribe("/gae/web_to_voice")
+        self.get_logger().info("📡 구독: /gae/web_to_voice")
+
+    def on_mqtt_message(self, client, userdata, msg):
+        """웹에서 온 메시지 처리"""
+        try:
+            text = msg.payload.decode('utf-8')
+            self.get_logger().info(f"📩 웹 메시지: {text}")
+            self.log_conversation(f"[웹→음성] {text}")
+            
+            # TTS로 음성 재생
+            self.bot.speak(text, filename="web_message.mp3")
+            
+            # 웹으로 확인 메시지 전송
+            self.mqtt_publish("/gae/voice_to_web", f"[확인] {text}")
+            
+        except Exception as e:
+            self.get_logger().error(f"❌ MQTT 메시지 처리 오류: {e}")
+
+    def mqtt_publish(self, topic, message):
+        """MQTT 메시지 발행"""
+        try:
+            self.mqtt_client.publish(topic, message)
+            self.get_logger().info(f"📤 MQTT 발행: {topic} -> {message}")
+        except Exception as e:
+            self.get_logger().error(f"❌ MQTT 발행 실패: {e}")
+
+    def log_conversation(self, message):
+        """대화 내용 파일에 기록"""
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        with open(self.log_file, 'a', encoding='utf-8') as f:
+            f.write(f"[{timestamp}] {message}\n")
 
     def yolo_callback(self, msg):
         """YOLO 클래스 ID 수신"""
         class_id = msg.data
         self.latest_class_id = class_id
         
-        # 클래스별 처리
-        if class_id == 0:  # 빨간불
+        if class_id == 0:
             self.latest_object = "빨간불"
             self.handle_red_light()
-        elif class_id == 1:  # 초록불
+        elif class_id == 1:
             self.latest_object = "초록불"
             self.handle_green_light()
-        elif class_id == 2:  # 정지 마커
+        elif class_id == 2:
             self.latest_object = "횡단보도 정지선"
             self.handle_stop_marker()
-        else:
-            self.latest_object = f"알 수 없는 물체 (클래스 {class_id})"
 
     def handle_red_light(self):
-        """빨간불 → 자동 정지"""
-        self.publish_response("빨간불입니다. 멈춥니다")
-        self.bot.speak("빨간불입니다. 멈춥니다")
+        msg = "빨간불입니다. 멈춥니다"
+        self.log_conversation(f"[YOLO] 빨간불 감지 → {msg}")
+        self.publish_response(msg)
+        self.bot.speak(msg)
+        self.mqtt_publish("/gae/voice_to_web", f"[YOLO] {msg}")
         self.stop_robot()
-        self.get_logger().info("[YOLO] 빨간불 감지 → 정지")
 
     def handle_green_light(self):
-        """초록불 → 자동 출발"""
-        self.publish_response("초록불입니다. 출발합니다")
-        self.bot.speak("초록불입니다. 출발합니다")
-        # 실제 전진 노드 실행
-        try:
-            subprocess.Popen(["ros2", "launch", "gae_bringup", "forward.launch.py"])
-            self.get_logger().info("[YOLO] 초록불 감지 → forward.launch.py 실행")
-        except Exception as e:
-            self.get_logger().error(f"[ERROR] forward.launch.py 실행 실패: {e}")
+        msg = "초록불입니다. 출발합니다"
+        self.log_conversation(f"[YOLO] 초록불 감지 → {msg}")
+        self.publish_response(msg)
+        self.bot.speak(msg)
+        self.mqtt_publish("/gae/voice_to_web", f"[YOLO] {msg}")
 
     def handle_stop_marker(self):
-        """정지 마커 → 정지 + 안내"""
-        self.publish_response("횡단보도 정지선입니다. 신호를 확인하세요")
-        self.bot.speak("횡단보도 정지선입니다. 신호를 확인하세요")
+        msg = "횡단보도 정지선입니다. 신호를 확인하세요"
+        self.log_conversation(f"[YOLO] 정지 마커 감지 → {msg}")
+        self.publish_response(msg)
+        self.bot.speak(msg)
+        self.mqtt_publish("/gae/voice_to_web", f"[YOLO] {msg}")
         self.stop_robot()
-        self.get_logger().info("[YOLO] 정지 마커 감지 → 정지")
 
     def stop_robot(self):
-        """로봇 정지"""
         twist = Twist()
         twist.linear.x = 0.0
         twist.angular.z = 0.0
         self.cmd_vel_pub.publish(twist)
-        self.get_logger().info("[동작] 정지")
+        self.log_conversation("[동작] 로봇 정지")
 
     def publish_status(self, status):
         msg = String()
@@ -171,42 +225,39 @@ class VoiceNode(Node):
         self.response_pub.publish(msg)
 
     def process_command(self, text):
-        """음성 명령 처리"""
-        print(f"📝 인식됨: '{text}'")
+        """키워드 기반 음성 명령 처리"""
+        self.log_conversation(f"[사용자] {text}")
         
-        if len(text) < 2:
-            return
+        # 웹으로 대화 내용 전송
+        self.mqtt_publish("/gae/voice_to_web", f"[사용자] {text}")
         
-        # 1. 전진 명령
-        if any(x in text for x in ['앞으로', '전진', '가', '출발', '고']):
-            self.publish_command(f"전진: {text}")
-            self.publish_response("전진합니다")
-            self.bot.speak("전진합니다")
-            
-            # 🔥 테스트용 더미 노드 실행
-            test_file = "/root/gae_ws/test_forward.sh"
-            if os.path.exists(test_file):
-                subprocess.Popen(["bash", test_file])
-                self.get_logger().info(f"[TEST] {test_file} 실행")
-            else:
-                self.get_logger().warn(f"[TEST] {test_file} 없음")
-            
-        # 2. 정지 명령
-        elif any(x in text for x in ['멈춰', '서', '스톱', '정지']):
-            self.publish_command(f"정지: {text}")
-            self.publish_response("정지합니다")
-            self.bot.speak("정지합니다")
-            self.stop_robot()
-            
-        # 3. 전방 확인 🔥 수정
-        elif any(x in text for x in ['뭐가', '보여', '앞에', '있어']):
-            self.publish_command(f"전방 확인: {text}")
+        # 1. 전방 확인 (구체적)
+        if any(x in text for x in ['뭐가 있어', '뭐 있어', '뭐 보여', '장애물']):
             response = f"앞에 {self.latest_object}가 있습니다"
             self.publish_response(response)
             self.bot.speak(response)
-        
+            self.mqtt_publish("/gae/voice_to_web", f"[로봇] {response}")
+            
+        # 2. 정지 명령
+        elif any(x in text for x in ['멈춰', '서', '스톱', '정지']):
+            response = "정지합니다"
+            self.publish_response(response)
+            self.bot.speak(response)
+            self.mqtt_publish("/gae/voice_to_web", f"[로봇] {response}")
+            self.stop_robot()
+            
+        # 3. 전진 명령
+        elif any(x in text for x in ['앞으로', '전진', '출발']):
+            response = "전진합니다"
+            self.publish_response(response)
+            self.bot.speak(response)
+            self.mqtt_publish("/gae/voice_to_web", f"[로봇] {response}")
+            
+            # 실제 노드 실행 (예시)
+            # subprocess.Popen(["ros2", "launch", "gae_bringup", "forward.launch.py"])
+            
         else:
-            print(f"❌ 명령 불일치: '{text}'")
+            self.log_conversation(f"❌ 명령 불일치: '{text}'")
 
     def voice_loop(self):
         while rclpy.ok():

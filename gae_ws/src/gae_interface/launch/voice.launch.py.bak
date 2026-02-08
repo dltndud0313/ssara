@@ -4,17 +4,17 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    exe = LaunchConfiguration('exe')
+    model = LaunchConfiguration('model')
 
     return LaunchDescription([
         DeclareLaunchArgument(
-            'exe',
-            default_value='voice_tiny',
-            description='gae_interface executable: voice_tiny | voice_small | voice_base'
+            'model',
+            default_value='tiny',
+            description='voice model: tiny | small | base'
         ),
         Node(
             package='gae_interface',
-            executable=exe,
+            executable=['voice_', model],   # voice_tiny / voice_small / voice_base
             name='spot_voice_node',
             output='screen',
             parameters=[]
