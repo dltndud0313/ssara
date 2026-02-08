@@ -257,7 +257,7 @@ onUnmounted(() => {
 });
 
 // 배터리 상태
-const currentBattery = computed(() => robotStore.robotStatus.battery || 75);
+const currentBattery = computed(() => robotStore.robotStatus.battery || 100);
 
 const batteryClass = computed(() => {
   if (currentBattery.value <= 20) return 'low';

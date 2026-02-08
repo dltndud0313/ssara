@@ -1,13 +1,7 @@
 <template>
   <div class="help-view">
     <header class="header">
-      <button class="back-btn" @click="$router.back()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
-      </button>
       <h1 class="header-title">도움말</h1>
-      <div class="header-spacer"></div>
     </header>
 
     <main class="content">
@@ -192,7 +186,7 @@ const toggleFaq = (index) => {
 
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 12px 16px;
   background: #fff;

@@ -4,7 +4,7 @@ import { robotApi } from './api/index.js';
 export const robotState = reactive({
   name: '',
   status: 'OFFLINE', // ONLINE, OFFLINE
-  battery: 0,
+  battery: 100,
   location: '',
   logs: [],
 
@@ -15,7 +15,7 @@ export const robotState = reactive({
       const data = response.data;
       this.name = data.name || '';
       this.status = data.status || 'OFFLINE';
-      this.battery = data.battery || 0;
+      this.battery = data.battery || 100;
       this.location = data.location || '위치 정보 없음';
       return true;
     } catch (error) {
@@ -40,7 +40,7 @@ export const robotState = reactive({
   reset() {
     this.name = '';
     this.status = 'OFFLINE';
-    this.battery = 0;
+    this.battery = 100;
     this.location = '';
     this.logs = [];
   }

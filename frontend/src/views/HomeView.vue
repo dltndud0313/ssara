@@ -7,7 +7,7 @@
           <span class="greeting">안녕하세요 👋</span>
           <h1 class="title">우리 가족 돌봄</h1>
         </div>
-        <button class="profile-btn" @click="$router.push('/profile')" title="내 정보">
+        <button class="profile-btn" @click="$router.push('/profile')" title="내정보">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
             <circle cx="12" cy="7" r="4"/>
@@ -18,11 +18,11 @@
 
     <!-- 메인 콘텐츠 -->
     <main class="content">
-      <!-- 로봇 상태 카드 -->
-      <section class="status-card" :class="{ offline: !isOnline }">
-        <div class="status-header">
+      <!-- 로봇 상태 카드 (컴팩트) -->
+      <section class="status-card" :class="{ offline: !isOnline }" @click="$router.push('/battery')" style="cursor: pointer;">
+        <div class="status-row">
           <div class="robot-avatar">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <circle cx="12" cy="12" r="10"/>
               <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
               <line x1="9" y1="9" x2="9.01" y2="9"/>
@@ -30,33 +30,22 @@
             </svg>
           </div>
           <div class="robot-info">
-            <h2 class="robot-name">{{ robotState.name }}</h2>
-            <div class="connection-status">
-              <span class="status-dot" :class="{ online: isOnline }"></span>
-              <span class="status-text">{{ isOnline ? '실시간 연결됨' : '연결 대기 중' }}</span>
-            </div>
+            <span class="robot-name">SSARA</span>
+            <span class="status-dot" :class="{ online: isOnline }"></span>
           </div>
+          <div class="battery-value" :class="batteryClass">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="6" width="18" height="12" rx="2" ry="2"/>
+              <line x1="23" y1="13" x2="23" y2="11"/>
+            </svg>
+            <span>{{ currentBattery }}%</span>
+          </div>
+          <svg class="battery-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
         </div>
-
-        <div class="status-body" @click="$router.push('/battery')" style="cursor: pointer;">
-          <div class="battery-section">
-            <div class="battery-header">
-              <div class="battery-icon" :class="batteryClass">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="1" y="6" width="18" height="12" rx="2" ry="2"/>
-                  <line x1="23" y1="13" x2="23" y2="11"/>
-                </svg>
-              </div>
-              <span class="battery-percent" :class="batteryClass">{{ currentBattery }}%</span>
-              <span class="battery-status">{{ batteryStatusText }}</span>
-              <svg class="battery-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </div>
-            <div class="battery-bar">
-              <div class="battery-fill" :class="batteryClass" :style="{ width: currentBattery + '%' }"></div>
-            </div>
-          </div>
+        <div class="battery-bar">
+          <div class="battery-fill" :class="batteryClass" :style="{ width: currentBattery + '%' }"></div>
         </div>
       </section>
 
@@ -97,18 +86,8 @@
       <section class="screen-section">
         <div class="section-header">
           <div class="section-title-wrap">
-            <span class="section-badge live">LIVE</span>
             <h3 class="section-title">로봇 카메라</h3>
           </div>
-          <button class="fullview-btn" @click="openFullscreenStream">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 3 21 3 21 9"/>
-              <polyline points="9 21 3 21 3 15"/>
-              <line x1="21" y1="3" x2="14" y2="10"/>
-              <line x1="3" y1="21" x2="10" y2="14"/>
-            </svg>
-            <span>전체보기</span>
-          </button>
         </div>
         <div class="stream-container">
           <img
@@ -117,12 +96,6 @@
             class="stream-image"
             @error="handleStreamError"
           />
-          <div class="stream-overlay">
-            <span class="live-indicator">
-              <span class="live-dot"></span>
-              LIVE
-            </span>
-          </div>
         </div>
       </section>
 
@@ -238,6 +211,18 @@
             <canvas ref="mapCanvas" class="map-canvas"></canvas>
             <div class="robot-marker" :style="robotMarkerStyle">
               <div class="robot-dot"></div>
+              <div class="robot-direction" :style="robotDirectionStyle"></div>
+            </div>
+            <!-- VSLAM 연결 상태 표시 -->
+            <div class="vslam-status" :class="{ connected: robotStore.vslamConnected }">
+              <span class="vslam-dot"></span>
+              <span>{{ robotStore.vslamConnected ? 'VSLAM 연결됨' : 'VSLAM 연결 중...' }}</span>
+            </div>
+            <!-- 좌표 표시 -->
+            <div class="coord-display">
+              X: {{ robotStore.robotPose.x.toFixed(2) }}m,
+              Y: {{ robotStore.robotPose.y.toFixed(2) }}m,
+              θ: {{ (robotStore.robotPose.theta * 180 / Math.PI).toFixed(0) }}°
             </div>
           </div>
           <!-- 카카오맵 -->
@@ -350,9 +335,13 @@ const recordingTime = ref('00:00');
 const showCaptureFlash = ref(false);
 const showSaveToast = ref(false);
 const saveToastMessage = ref('');
-let recordingInterval = null;
 let recordingSeconds = 0;
-let recordedFrames = [];
+let homeTimeInterval = null;
+let homeMediaRecorder = null;
+let homeRecordedChunks = [];
+let homeRecordCanvas = null;
+let homeRecordCtx = null;
+let homeDrawFrameInterval = null;
 
 const openFullscreenStream = async () => {
   isFullscreenOpen.value = true;
@@ -462,27 +451,75 @@ const toggleRecording = () => {
   }
 };
 
-// 녹화 시작
+// 녹화 시작 (MediaRecorder → WebM)
 const startRecording = () => {
+  const img = fullscreenImageRef.value;
+  if (!img) {
+    showToast('카메라 스트림이 없습니다');
+    return;
+  }
+
+  homeRecordCanvas = document.createElement('canvas');
+  homeRecordCanvas.width = 640;
+  homeRecordCanvas.height = 360;
+  homeRecordCtx = homeRecordCanvas.getContext('2d');
+
+  try {
+    homeRecordCtx.drawImage(img, 0, 0, homeRecordCanvas.width, homeRecordCanvas.height);
+  } catch (e) { /* ignore */ }
+
+  const canvasStream = homeRecordCanvas.captureStream(10);
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9'
+    : MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+      ? 'video/webm;codecs=vp8'
+      : 'video/webm';
+
+  homeRecordedChunks = [];
+  homeMediaRecorder = new MediaRecorder(canvasStream, {
+    mimeType,
+    videoBitsPerSecond: 1000000
+  });
+
+  homeMediaRecorder.ondataavailable = (e) => {
+    if (e.data.size > 0) homeRecordedChunks.push(e.data);
+  };
+
+  homeMediaRecorder.onstop = () => {
+    const blob = new Blob(homeRecordedChunks, { type: mimeType });
+    const mins = Math.floor(recordingSeconds / 60);
+    const secs = recordingSeconds % 60;
+    const durationStr = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : `0:${String(secs).padStart(2, '0')}`;
+
+    let thumbnail = '';
+    try {
+      const tc = document.createElement('canvas');
+      tc.width = 320; tc.height = 180;
+      tc.getContext('2d').drawImage(img, 0, 0, 320, 180);
+      thumbnail = tc.toDataURL('image/jpeg', 0.7);
+    } catch (e) { /* ignore */ }
+
+    recordsStore.addVideo(blob, durationStr, '', thumbnail);
+    showToast(`${recordingSeconds}초 녹화가 기록에 저장되었습니다`);
+    homeRecordedChunks = [];
+    recordingSeconds = 0;
+    recordingTime.value = '00:00';
+  };
+
+  homeMediaRecorder.start(1000);
   isRecording.value = true;
   recordingSeconds = 0;
-  recordedFrames = [];
   updateRecordingTime();
 
-  // 첫 프레임 즉시 캡처
-  captureFrame();
+  homeDrawFrameInterval = setInterval(() => {
+    try {
+      if (img.complete && img.naturalWidth > 0) {
+        homeRecordCtx.drawImage(img, 0, 0, homeRecordCanvas.width, homeRecordCanvas.height);
+      }
+    } catch (e) { /* ignore */ }
+  }, 100);
 
-  // 타이머 시작 (0.5초마다 프레임 캡처)
-  recordingInterval = setInterval(() => {
-    captureFrame();
-  }, 500);
-
-  // 시간 업데이트용 별도 타이머
-  const timeInterval = setInterval(() => {
-    if (!isRecording.value) {
-      clearInterval(timeInterval);
-      return;
-    }
+  homeTimeInterval = setInterval(() => {
     recordingSeconds++;
     updateRecordingTime();
   }, 1000);
@@ -491,55 +528,12 @@ const startRecording = () => {
 };
 
 // 녹화 중지
-const stopRecording = async () => {
+const stopRecording = () => {
   isRecording.value = false;
-
-  if (recordingInterval) {
-    clearInterval(recordingInterval);
-    recordingInterval = null;
-  }
-
-  // 녹화된 프레임이 있으면 저장
-  if (recordedFrames.length > 0) {
-    try {
-      // 녹화 시간 포맷
-      const mins = Math.floor(recordingSeconds / 60);
-      const secs = recordingSeconds % 60;
-      const durationStr = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : `0:${String(secs).padStart(2, '0')}`;
-
-      // 기록에 저장
-      recordsStore.addVideo(recordedFrames, durationStr);
-
-      showToast(`${recordingSeconds}초 녹화가 기록에 저장되었습니다`);
-    } catch (error) {
-      console.error('녹화 저장 실패:', error);
-      showToast('녹화 저장에 실패했습니다');
-    }
-  }
-
-  recordedFrames = [];
-  recordingSeconds = 0;
-  recordingTime.value = '00:00';
-};
-
-// 프레임 캡처 (최대 20프레임, 저용량)
-const MAX_FRAMES = 20;
-const captureFrame = () => {
-  const img = fullscreenImageRef.value;
-  if (!img) return;
-  if (recordedFrames.length >= MAX_FRAMES) return; // 프레임 수 제한
-
-  try {
-    const canvas = document.createElement('canvas');
-    // 저용량을 위해 해상도 축소
-    canvas.width = 320;
-    canvas.height = 180;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-    recordedFrames.push(dataUrl);
-  } catch (error) {
-    console.error('프레임 캡처 실패:', error);
+  if (homeDrawFrameInterval) { clearInterval(homeDrawFrameInterval); homeDrawFrameInterval = null; }
+  if (homeTimeInterval) { clearInterval(homeTimeInterval); homeTimeInterval = null; }
+  if (homeMediaRecorder && homeMediaRecorder.state !== 'inactive') {
+    homeMediaRecorder.stop();
   }
 };
 
@@ -652,6 +646,16 @@ const robotMarkerStyle = computed(() => {
   const px = ((x - mapConfig.minX) / rangeX) * width;
   const py = height - ((y - mapConfig.minY) / rangeY) * height;
   return { left: `${px}px`, top: `${py}px`, transform: 'translate(-50%, -50%)' };
+});
+
+// 로봇 방향 화살표 스타일 (theta 라디안 → CSS rotate)
+const robotDirectionStyle = computed(() => {
+  // theta: 라디안, 반시계 방향이 양수
+  // CSS rotate: 시계 방향이 양수, 위쪽이 0도
+  // 변환: -theta (라디안→도) - 90도 (위쪽 기준)
+  const theta = robotStore.robotPose.theta || 0;
+  const degrees = -(theta * 180 / Math.PI) + 90;
+  return { transform: `rotate(${degrees}deg)` };
 });
 
 const switchToKakao = () => {
@@ -895,13 +899,13 @@ const handleLogout = () => {
   -moz-osx-font-smoothing: grayscale;
   background: #f2f4f6;
   color: #191f28;
-  padding-bottom: 100px;
+  padding-bottom: 80px;
 }
 
 /* 헤더 */
 .header {
   background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
-  padding: 20px 20px 24px;
+  padding: 16px 20px 14px;
 }
 
 .header-content {
@@ -924,16 +928,17 @@ const handleLogout = () => {
 }
 
 .title {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   color: #191f28;
   letter-spacing: -0.02em;
 }
 
 .profile-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  margin-top: 16px;
   background: #fff;
   border: 1px solid #e5e8eb;
   display: flex;
@@ -955,174 +960,109 @@ const handleLogout = () => {
   overflow-x: hidden;
 }
 
-/* 상태 카드 */
+/* 상태 카드 (컴팩트) */
 .status-card {
   position: relative;
   background: #fff;
-  border-radius: 24px;
-  padding: 24px 20px 20px;
-  margin-top: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-top: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s ease;
 }
 
-.status-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3182f6 0%, #20c997 100%);
-  opacity: 0;
-  transition: opacity 0.3s;
+.status-card:active {
+  transform: scale(0.98);
 }
 
-.status-card:not(.offline)::before {
-  opacity: 1;
-}
-
-.status-card.offline {
-  border: 1px solid #e5e8eb;
-}
-
-.status-header {
+.status-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .robot-avatar {
-  width: 56px;
-  height: 56px;
+  width: 38px;
+  height: 38px;
   background: linear-gradient(135deg, #3182f6 0%, #5BA0F5 100%);
-  border-radius: 16px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(49, 130, 246, 0.25);
 }
 
 .robot-info {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .robot-name {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   color: #191f28;
-  margin-bottom: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   letter-spacing: -0.02em;
 }
 
-.connection-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #b0b8c1;
+  flex-shrink: 0;
 }
 
 .status-dot.online {
   background: #20c997;
-  box-shadow: 0 0 0 4px rgba(32, 201, 151, 0.2);
+  box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2);
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(32, 201, 151, 0.2); }
-  50% { box-shadow: 0 0 0 8px rgba(32, 201, 151, 0.1); }
+  0%, 100% { box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(32, 201, 151, 0.1); }
 }
 
-.status-text {
-  font-size: 13px;
-  font-weight: 500;
-  color: #8b95a1;
-}
-
-.status-body {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 16px;
-}
-
-/* 배터리 섹션 */
-.battery-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.battery-header {
+.battery-value {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.battery-icon {
-  display: flex;
-  align-items: center;
-}
-
-.battery-icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.battery-icon.high { color: #20c997; }
-.battery-icon.medium { color: #F59E0B; }
-.battery-icon.low { color: #EF4444; }
-
-.battery-percent {
-  font-size: 22px;
+  gap: 4px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  flex-shrink: 0;
 }
 
-.battery-percent.high { color: #20c997; }
-.battery-percent.medium { color: #F59E0B; }
-.battery-percent.low { color: #EF4444; }
-
-.battery-status {
-  font-size: 13px;
-  font-weight: 500;
-  color: #8b95a1;
-  margin-left: auto;
-}
+.battery-value.high { color: #20c997; }
+.battery-value.medium { color: #F59E0B; }
+.battery-value.low { color: #EF4444; }
 
 .battery-arrow {
   color: #b0b8c1;
-  margin-left: 4px;
+  flex-shrink: 0;
 }
 
 .battery-bar {
   width: 100%;
-  height: 8px;
+  height: 5px;
   background: #e5e8eb;
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .battery-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1133,9 +1073,8 @@ const handleLogout = () => {
 /* 퀵 액션 버튼 */
 .quick-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 16px;
-  padding: 0 2px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .quick-action-btn {
@@ -1143,33 +1082,33 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px 8px;
+  gap: 6px;
+  padding: 14px 8px;
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
   border: none;
   cursor: pointer;
 }
 
-.quick-action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
-}
-
 .quick-action-btn:active {
-  transform: translateY(0);
+  transform: scale(0.97);
 }
 
 .action-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
+}
+
+.action-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .action-icon.camera {
@@ -1185,7 +1124,7 @@ const handleLogout = () => {
 }
 
 .quick-action-btn span {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #4e5968;
   letter-spacing: -0.02em;
@@ -1195,51 +1134,32 @@ const handleLogout = () => {
 
 /* 로봇 화면 스트리밍 섹션 */
 .screen-section {
-  margin-top: 16px;
+  margin-top: 10px;
   background: #fff;
-  border-radius: 24px;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-}
-
-.fullview-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: #f2f4f6;
-  color: #6b7684;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  letter-spacing: -0.01em;
-}
-
-.fullview-btn:hover {
-  background: #3182f6;
-  color: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .section-title-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .section-badge {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 1px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 3px 7px;
+  border-radius: 5px;
   color: #fff;
 }
 
@@ -1252,29 +1172,10 @@ const handleLogout = () => {
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   color: #191f28;
   letter-spacing: -0.02em;
-}
-
-.expand-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: #f2f4f6;
-  color: #6b7684;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  letter-spacing: -0.01em;
-}
-
-.expand-btn:hover {
-  background: #3182f6;
-  color: #fff;
 }
 
 .stream-container {
@@ -1282,7 +1183,7 @@ const handleLogout = () => {
   width: 100%;
   aspect-ratio: 16/9;
   background: #191f28;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -1302,12 +1203,12 @@ const handleLogout = () => {
 .live-indicator {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 5px;
+  padding: 4px 8px;
   background: rgba(239, 68, 68, 0.9);
   backdrop-filter: blur(8px);
-  border-radius: 8px;
-  font-size: 11px;
+  border-radius: 6px;
+  font-size: 10px;
   font-weight: 700;
   color: #fff;
   letter-spacing: 1px;
@@ -1328,16 +1229,16 @@ const handleLogout = () => {
 
 /* 지도 섹션 */
 .map-section {
-  margin-top: 16px;
+  margin-top: 10px;
   background: #fff;
-  border-radius: 24px;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .map-container {
-  height: 280px;
-  border-radius: 16px;
+  height: 240px;
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
   background: #f8f9fa;
@@ -1368,6 +1269,70 @@ const handleLogout = () => {
   border: 3px solid white;
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(49, 130, 246, 0.4);
+}
+
+.robot-direction {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 18px solid #3182f6;
+  transform-origin: center bottom;
+  margin-left: -6px;
+  margin-top: -18px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+.vslam-status {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b95a1;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+
+.vslam-status.connected {
+  color: #20c997;
+}
+
+.vslam-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b0b8c1;
+}
+
+.vslam-status.connected .vslam-dot {
+  background: #20c997;
+  box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.2);
+  animation: pulse 2s infinite;
+}
+
+.coord-display {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #4e5968;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
 }
 
 .kakao-map {
@@ -1404,23 +1369,23 @@ const handleLogout = () => {
 
 .map-toggle {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 8px;
+  left: 8px;
   display: flex;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
-  border-radius: 10px;
-  padding: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 3px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 20;
 }
 
 .toggle-btn {
-  padding: 6px 12px;
-  font-size: 11px;
+  padding: 4px 10px;
+  font-size: 10px;
   font-weight: 600;
   color: #8b95a1;
-  border-radius: 7px;
+  border-radius: 6px;
   transition: all 0.2s ease;
   letter-spacing: -0.01em;
 }
@@ -1431,32 +1396,31 @@ const handleLogout = () => {
 }
 
 .sync-btn {
-  margin-left: 4px;
-  padding: 6px 10px;
+  margin-left: 3px;
+  padding: 4px 8px;
   background: #20c997;
   color: white;
-  border-radius: 7px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
 }
 
-.sync-btn:hover {
-  background: #12b886;
-  transform: scale(1.05);
+.sync-btn:active {
+  transform: scale(0.95);
 }
 
 .sync-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 .location-text {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: #4e5968;
-  max-width: 160px;
+  color: #8b95a1;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1474,8 +1438,8 @@ const handleLogout = () => {
   right: 0;
   max-width: 600px;
   margin: 0 auto;
-  height: 72px;
-  background: rgba(255, 255, 255, 0.92);
+  height: 64px;
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid rgba(0, 0, 0, 0.06);
@@ -1510,8 +1474,8 @@ const handleLogout = () => {
 }
 
 .nav-item svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .nav-item span {

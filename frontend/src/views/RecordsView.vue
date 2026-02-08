@@ -355,50 +355,27 @@
 
         <div class="preview-content" @click.stop>
           <img v-if="previewItem.type === 'photo'" :src="previewItem.url" :alt="previewItem.title" />
-          <!-- 동영상 프레임 슬라이드쇼 -->
-          <div v-else class="video-player" @click="hasFrames ? toggleVideoPlay() : null">
-            <img :src="currentFrame" :alt="previewItem.title" class="video-frame" />
-
-            <div v-if="hasFrames" class="video-overlay" :class="{ hidden: isVideoPlaying }">
-              <button class="play-overlay-btn">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-              </button>
-            </div>
-
-            <div v-if="!hasFrames" class="no-frames-overlay">
+          <!-- 동영상 재생 -->
+          <div v-else class="video-player">
+            <!-- Blob URL이 있는 경우: 실제 비디오 재생 -->
+            <video
+              v-if="hasVideoUrl"
+              ref="videoPlayerRef"
+              :src="previewItem.url"
+              class="video-frame"
+              controls
+              playsinline
+              :poster="previewItem.thumbnail"
+            ></video>
+            <!-- Blob이 만료된 경우: 썸네일만 표시 -->
+            <div v-else class="no-frames-overlay">
+              <img v-if="previewItem.thumbnail" :src="previewItem.thumbnail" class="video-frame" style="opacity: 0.6;" />
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <polygon points="23 7 16 12 23 17 23 7"/>
                 <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
               </svg>
-              <p>녹화 미리보기</p>
+              <p>영상이 만료되었습니다</p>
               <span>{{ previewItem.duration || '0:00' }}</span>
-            </div>
-
-            <div v-if="hasFrames" class="video-controls" @click.stop>
-              <button class="play-btn" @click="toggleVideoPlay">
-                <svg v-if="!isVideoPlaying" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-                <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16"/>
-                  <rect x="14" y="4" width="4" height="16"/>
-                </svg>
-              </button>
-              <div class="progress-wrapper" @click="seekVideo">
-                <div class="progress-bar">
-                  <div class="progress-fill" :style="{ width: videoProgress + '%' }"></div>
-                </div>
-              </div>
-              <span class="video-time">{{ currentFrameIndex + 1 }} / {{ previewItem.frames?.length || 0 }}</span>
-            </div>
-
-            <div v-if="!hasFrames" class="video-duration-badge">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
-              {{ previewItem.duration || '0:00' }}
             </div>
           </div>
         </div>
@@ -456,73 +433,19 @@ const todayDate = new Date().toISOString().split('T')[0];
 const activityViewMode = ref(null); // { type: 'photo'|'video', isFavorite: boolean }
 
 // 동영상 재생 관련
-const isVideoPlaying = ref(false);
-const currentFrameIndex = ref(0);
-let videoPlayInterval = null;
 
-const hasFrames = computed(() => {
+const videoPlayerRef = ref(null);
+
+// Blob URL이 유효한지 확인 (blob: 프로토콜)
+const hasVideoUrl = computed(() => {
   return previewItem.value?.type === 'video' &&
-         previewItem.value?.frames &&
-         previewItem.value.frames.length > 0;
+         previewItem.value?.url &&
+         previewItem.value.url.startsWith('blob:');
 });
-
-const currentFrame = computed(() => {
-  if (hasFrames.value) {
-    const idx = Math.min(currentFrameIndex.value, previewItem.value.frames.length - 1);
-    return previewItem.value.frames[idx] || previewItem.value.thumbnail;
-  }
-  return previewItem.value?.thumbnail || previewItem.value?.url || '';
-});
-
-const videoProgress = computed(() => {
-  if (previewItem.value?.frames?.length > 0) {
-    return ((currentFrameIndex.value + 1) / previewItem.value.frames.length) * 100;
-  }
-  return 0;
-});
-
-const toggleVideoPlay = () => {
-  if (isVideoPlaying.value) {
-    stopVideoPlay();
-  } else {
-    startVideoPlay();
-  }
-};
-
-const startVideoPlay = () => {
-  if (!previewItem.value?.frames?.length) return;
-
-  isVideoPlaying.value = true;
-  videoPlayInterval = setInterval(() => {
-    if (currentFrameIndex.value < previewItem.value.frames.length - 1) {
-      currentFrameIndex.value++;
-    } else {
-      currentFrameIndex.value = 0;
-    }
-  }, 500);
-};
-
-const stopVideoPlay = () => {
-  isVideoPlaying.value = false;
-  if (videoPlayInterval) {
-    clearInterval(videoPlayInterval);
-    videoPlayInterval = null;
-  }
-};
-
-const seekVideo = (event) => {
-  if (!previewItem.value?.frames?.length) return;
-
-  const rect = event.currentTarget.getBoundingClientRect();
-  const percent = (event.clientX - rect.left) / rect.width;
-  const newIndex = Math.floor(percent * previewItem.value.frames.length);
-  currentFrameIndex.value = Math.max(0, Math.min(newIndex, previewItem.value.frames.length - 1));
-};
 
 watch(previewItem, (newVal) => {
-  if (!newVal) {
-    stopVideoPlay();
-    currentFrameIndex.value = 0;
+  if (!newVal && videoPlayerRef.value) {
+    videoPlayerRef.value.pause();
   }
 });
 
@@ -551,7 +474,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  stopVideoPlay();
+  // cleanup
 });
 
 // 필터링된 미디어
@@ -666,17 +589,49 @@ const closePreview = () => {
 // 단일 아이템 다운로드
 const downloadItem = async (item) => {
   try {
-    const response = await fetch(item.url);
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${item.title}.${item.type === 'photo' ? 'jpg' : 'mp4'}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-    showToast('저장되었습니다.');
+    if (item.type === 'video') {
+      // 비디오: Blob에서 직접 다운로드
+      const videoData = recordsStore.getVideoBlob(item.id);
+      if (videoData && videoData.blob) {
+        const url = URL.createObjectURL(videoData.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${item.title}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('영상이 저장되었습니다.');
+      } else if (item.url && item.url.startsWith('blob:')) {
+        // Blob Map에 없지만 URL이 아직 유효한 경우
+        const response = await fetch(item.url);
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${item.title}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('영상이 저장되었습니다.');
+      } else {
+        showToast('영상이 만료되었습니다. 새로 녹화해주세요.');
+      }
+    } else {
+      // 사진: 기존 방식
+      const response = await fetch(item.url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${item.title}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('저장되었습니다.');
+    }
   } catch (error) {
     console.error('다운로드 실패:', error);
     showToast('저장에 실패했습니다.');
