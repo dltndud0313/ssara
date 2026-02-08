@@ -1,4 +1,4 @@
-# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.3)
+# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.5)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -64,6 +64,9 @@ source install/setup.bash
 cd ~/workspaces
 
 # xhost +local:root
+
+# docker commit (container_id) jjy092801/gae-system:vn.n
+# docker push jjy092801/gae-system:vn.n
 
 docker compose start
 # docker compose start (특정 인원 ID)
@@ -139,9 +142,9 @@ git config --local user.email "your_email@example.com"
 파이썬(.py) 코드만 수정했다면 colcon build를 다시 할 필요가 없습니다! (단, --symlink-install 옵션으로 빌드했을 경우에만 해당)
 > 
 
-## 3. 소프트웨어 환경 요약 (v2.3)
+## 3. 소프트웨어 환경 요약 (v2.5)
 
-이미지(`gae-system:v2.3`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+이미지(`gae-system:v2.5`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
@@ -153,6 +156,8 @@ git config --local user.email "your_email@example.com"
 | **CUDA** | CUDA Toolkit | **12.2** | V12.2.140 (GPU 가속을 위한 핵심 코어) |
 | **Python** | Python | **3.10.12** | Ubuntu 22.04 기본 파이썬 환경 |
 | **Monitor** | **jetson-stats** | **4.2.x** | **jtop** 시스템 모니터링 도구 (CPU/GPU/Fan 상태 확인) |
+| **Dependency** | **Click** | **8.1.7** | **⚠️ 버전 고정:** Flask와 gTTS 간의 호환성 유지를 위해 8.1.7로 고정됨. |
+| **Dependency** | **Blinker** | **1.9.0** | **⚠️ 강제 업데이트:** Flask 최신 버전 구동을 위해 시스템 기본값(1.4) 대신 업데이트됨. |
 
 - **인공지능 및 딥러닝 (AI & Deep Learning)**
     - Jetson의 NPU/GPU를 최대한 활용하도록 **최적화된 버전**이 설치되어 있습니다.
@@ -186,7 +191,8 @@ git config --local user.email "your_email@example.com"
 | **PyAudio** | **0.2.14** | 마이크 하드웨어 제어 및 입출력 담당 (PortAudio 기반) |
 | **gTTS** | **2.5.4** | **Google Text-to-Speech.** 텍스트를 음성(mp3)으로 변환하는 라이브러리. |
 | **pulseaudio-utils** | 15.99.1 | **시스템 오디오 도구.** `pactl` 명령어로 마이크/스피커 ID 확인 가능. |
-| **SoX** | 14.4.2 | **오디오 처리 툴.** `play`, `rec` 명령어 포함 (mp3 재생 및 변환). |
+| **SoX** | 14.4.2 | **오디오 처리 툴.** `play`, `rec` 명령어 포함. |
+| **libsox-fmt-all** | (System) | **🆕 오디오 코덱 확장.** MP3, OGG, FLAC 등 다양한 포맷 재생을 위한 필수 라이브러리. |
 | **libasound2-plugins** | (latest) | **ALSA-PulseAudio 브릿지.** 도커-호스트 간 오디오 스트리밍 최적화 |
 
 - **하드웨어 제어 (Hardware Control)**
@@ -207,9 +213,19 @@ git config --local user.email "your_email@example.com"
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
 | **paho-mqtt** | **2.1.0** | **MQTT 프로토콜** 클라이언트. 로봇(Pub)과 웹 서버(Sub) 간의 실시간 데이터 송수신 담당. |
+| **Flask** | **3.1.2** | **🆕 웹 서버 프레임워크.** 로봇 제어 API 및 대시보드 백엔드 구동. |
+| **Flask-Cors** | **6.0.2** | **🆕 보안 설정.** 외부 웹 페이지(React/Vue 등)에서 로봇 API 호출 시 CORS 에러 방지. |
+| **mosquitto-clients** | (System) | **🆕 터미널 디버깅 툴.** `mosquitto_pub/sub` 명령어로 통신 상태 즉시 확인 가능. |
 | **web_video_server** | (Binary) | **웹 비디오 스트리밍.** ROS 이미지 토픽을 웹 브라우저 호환(MJPEG) 포맷으로 변환하여 실시간 송출. |
 
-## 4. 하드웨어 환경 요약 (v2.3)
+- **개발 및 디버깅 도구 (Development & Debugging Tools)**
+
+| **패키지명** | **버전** | **설명 및 특이사항** |
+| --- | --- | --- |
+| **ros-humble-plotjuggler-ros** | (System) | **⭐ 데이터 시각화 도구.** ROS 2 토픽 및 rosbag 데이터를 실시간 그래프로 분석. |
+| **rosbag2** | (System) | **데이터 녹화 도구.** ROS 2 표준 기록 장치 (.mcap 형식 지원). |
+
+## 4. 하드웨어 환경 요약 (v2.5)
 
 - **컴퓨팅 및 제어 (Computing & Control)**
 
