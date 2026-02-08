@@ -10,6 +10,11 @@ import NoticesView from '../views/NoticesView.vue'
 import InquiriesView from '../views/InquiriesView.vue'
 import ScreenView from '../views/ScreenView.vue'
 import HealthcareView from '../views/HealthcareView.vue'
+import FeaturesView from '../views/FeaturesView.vue'
+import HelpView from '../views/HelpView.vue'
+import BatteryView from '../views/BatteryView.vue'
+import NavigationView from '../views/NavigationView.vue'
+import RecordsView from '../views/RecordsView.vue'
 
 const routes = [
   {
@@ -68,6 +73,36 @@ const routes = [
     path: '/healthcare',
     name: 'Healthcare',
     component: HealthcareView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/features',
+    name: 'Features',
+    component: FeaturesView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/help',
+    name: 'Help',
+    component: HelpView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/battery',
+    name: 'Battery',
+    component: BatteryView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/navigation',
+    name: 'Navigation',
+    component: NavigationView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/records',
+    name: 'Records',
+    component: RecordsView,
     meta: { requiresAuth: true }
   }
 ]

@@ -1,4 +1,4 @@
-# 🐕 GAE Robot 통합 개발 환경 가이드 (v2.1)
+# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.6)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -8,42 +8,170 @@
 
 ## 🚀 빠른 시작 (Quick Start)
 
-가장 먼저 `git pull`을 받아 최신 상태로 만들고, 아래 스크립트만 실행하세요.
+팀원들은 본인에게 할당된 폴더에서 아래 절차를 따라주세요. (이미 환경은 관리자가 구성해 두었습니다.)
 
-### 1. 환경 실행
+## 💻 개발자별 할당 정보
 
-- 터미널에서 `gae_ws` 폴더로 이동 후 실행 스크립트를 가동합니다.
-(이 스크립트가 USB, 카메라, GPU 권한을 모두 자동으로 연결합니다.)
+| 이름 | 컨테이너 이름 | 호스트 작업 경로 | ROS_DOMAIN_ID |
+| --- | --- | --- | --- |
+| **정지용** | `jjy092801` | `~/S14P11C101/gae_ws` | 101 |
+| **김태연** | `taeyeon` | `~/workspaces/taeyeon/S14P11C101/gae_ws` | 101 |
+| **이수영** | `sooyoung` | `~/workspaces/sooyoung/S14P11C101/gae_ws` | 101 |
+| **김경한** | `kyunghan` | `~/workspaces/kyunghan/S14P11C101/gae_ws` | 101 |
+| **오충민** | `chungmin` | `~/workspaces/chungmin/S14P11C101/gae_ws` | 101 |
+
+### 1. 컨테이너 접속
+
+- 본인의 이름으로 된 폴더로 이동하여 접속 스크립트를 실행합니다.
+- 이 스크립트를 통해 본인만의 독립된 도커 환경(GPU, 카메라 권한 포함)으로 입장합니다.
+- 본 프로젝트는 Jetson Orin Nano의 자원을 효율적으로 사용하고, 개발자 간의 **Git 충돌 및 ROS2 토픽 간섭을 방지**하기 위해 **1인 1컨테이너/1인 1저장소** 체제로 운영됩니다.
 
 ```bash
+# 1. 본인 작업 폴더로 이동 (예: taeyeon, sooyoung 등)
+cd ~/workspaces/[본인이름]
+
+# 2. 컨테이너 접속 스크립트 실행
+# chmod +x connect.sh << 권한 거부시 실행
+./connect.sh
+```
+
+### 2. 워크스페이스 빌드 (Container 내부)
+
+- 도커 터미널(`root@ubuntu:/root/gae_ws#`)이 열리면 아래 명령어를 입력합니다.
+- **주의:** Jetson 메모리 보호를 위해 빌드는 **한 명씩 차례대로** 진행해 주세요.
+
+```bash
+# 1. 워크스페이스 이동
 cd ~/gae_ws
 
-./run_gae.sh
+# 2. 전체 패키지 빌드
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-colcon build --symlink-install
-
-# build 에러 뜨면 아래 실행 후 다시 colcon build
+# 만약 빌드 에러(충돌) 발생 시 기존 내역 삭제 후 재빌드
 # rm -rf build install log
 # colcon build --symlink-install
 
+# 3. 환경 변수 적용 (새 터미널을 열 때마다 실행하거나 .bashrc에 등록)
 source install/setup.bash
 ```
 
-### 2. 빌드 (Container 내부)
+## 🛠️ 관리자용 가이드 (Jetson 재부팅 시)
 
-- 도커 터미널(`root@ubuntu...`)이 열리면 바로 빌드
+만약 Jetson이 재부팅되었거나 컨테이너가 멈춘 경우, 관리자(`ssafy`)가 아래 명령어를 한 번 실행해줘야 합니다.
+
+```bash
+# Jetson 터미널
+cd ~/workspaces
+
+# xhost +local:root
+
+# docker commit (container_id) jjy092801/gae-system:vn.n
+# docker push jjy092801/gae-system:vn.n
+
+docker compose start
+# docker compose start (특정 인원 ID)
+
+# VSCode 접속 후
+cd ~/S14P11C101/gae_ws
+
+./connect.sh
+```
+
+- **도커 이미지 업데이트 시 가이드**
 
 ```python
-# 전체 패키지 빌드
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+# 1. 워크스페이스 이동
+cd ~/workspaces
 
-# 환경 변수 적용 (최초 1회 혹은 새 패키지 추가 시)
-source install/setup.bash
+# 2. X11 시각화 권한 부여 (재부팅 시 필수)
+# xhost +local:root
+
+# 3. 기존 컨테이너 중지 및 제거 (소스 코드는 안전합니다)
+docker compose down
+
+# 4. 새 이미지 기반 컨테이너 생성 및 자동 실행
+# (이 명령어 한 번으로 생성 + 실행(Start)이 동시에 완료됩니다)
+docker compose up -d
+
+# 5. 실행 상태 최종 확인
+docker ps
 ```
 
-## 3. 소프트웨어 환경 요약 (v2.1)
+- **Ros2 Humble 코드 개발 후 빌드 진행 가이드**
 
-이미지(`gae-system:v2.1`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+```python
+# 1. 워크스페이스로 이동
+cd ~/gae_ws
+
+# 2. 코드 수정 후 빌드 (특정 패키지만 빌드하는 습관을 들이면 좋습니다)
+colcon build --symlink-install --packages-select gae_control  <-- 예: gae_control 수정 시
+
+# 3. 환경 설정 적용
+source install/setup.bash
+
+# 4. 실행
+ros2 launch gae_control control.launch.py
+```
+
+- **도커 이미지 업데이트 (관리자용)**
+
+```python
+# 컨테이너 → 새 버전 이미지로 commit
+docker commit 115834c5ce60 jjy092801/gae-system:v2.6
+
+# Docker Hub 로그인 (이미 돼 있으면 스킵)
+# docker login
+
+# 새 버전 이미지 push
+docker push jjy092801/gae-system:v2.6
+
+# docker-compose.yml 수정
+services:
+  gae-system:
+    image: jjy092801/gae-system:vn.n
+    
+# 기존 컨테이너 내리기
+docker compose down
+
+# 새 이미지 pull
+docker compose pull
+
+# 재배포
+docker compose up -d
+```
+
+### 3. Git 협업 규칙
+
+- **개인 설정**: 컨테이너 접속 후 **딱 한 번만** 실행하세요. 이후에는 컨테이너를 껐다 켜도 유지됩니다.
+
+```bash
+git config --local user.name "Your Name"
+git config --local user.email "your_email@example.com"
+```
+
+- **브랜치 관리**: `main` 브랜치에 직접 Push하지 말고, 반드시 본인 브랜치에서 작업 후 PR(Pull Request)을 생성하세요.
+- **최신화**: 작업 시작 전 항상 `git pull`을 받아 팀원들의 변경 사항을 반영하세요.
+
+---
+
+### 💡 팁: 실행이 안 된다면?
+
+만약 `./connect.sh` 실행 시 컨테이너가 꺼져 있다는 메시지가 나오면, 관리자(@jjy092801)에게 **"컨테이너 올려달라"**고 요청하세요!
+
+### 🛠️ 빌드(colcon build)는 언제 다시 하나요?
+
+1. **최초 1회**: 컨테이너를 처음 만들고 접속했을 때 (필수)
+2. **새로운 패키지 추가**: `git pull`을 받았는데 새로운 ROS2 패키지가 생겼을 때
+3. **C++/Msg 수정**: 소스 코드(`.cpp`, `.hpp`)나 커스텀 메시지 파일을 수정했을 때
+4. **빌드 에러 발생**: 원인 모를 빌드 오류가 날 때는 `rm -rf build install log` 후 다시 빌드
+
+> ⚠️ **주의 (Jetson Orin Nano 공통)**
+파이썬(.py) 코드만 수정했다면 colcon build를 다시 할 필요가 없습니다! (단, --symlink-install 옵션으로 빌드했을 경우에만 해당)
+> 
+
+## 3. 소프트웨어 환경 요약 (v2.6)
+
+이미지(`gae-system:v2.6`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
@@ -55,6 +183,8 @@ source install/setup.bash
 | **CUDA** | CUDA Toolkit | **12.2** | V12.2.140 (GPU 가속을 위한 핵심 코어) |
 | **Python** | Python | **3.10.12** | Ubuntu 22.04 기본 파이썬 환경 |
 | **Monitor** | **jetson-stats** | **4.2.x** | **jtop** 시스템 모니터링 도구 (CPU/GPU/Fan 상태 확인) |
+| **Dependency** | **Click** | **8.1.7** | **⚠️ 버전 고정:** Flask와 gTTS 간의 호환성 유지를 위해 8.1.7로 고정됨. |
+| **Dependency** | **Blinker** | **1.9.0** | **⚠️ 강제 업데이트:** Flask 최신 버전 구동을 위해 시스템 기본값(1.4) 대신 업데이트됨. |
 
 - **인공지능 및 딥러닝 (AI & Deep Learning)**
     - Jetson의 NPU/GPU를 최대한 활용하도록 **최적화된 버전**이 설치되어 있습니다.
@@ -68,6 +198,7 @@ source install/setup.bash
 | **Ultralytics** | **8.4.9** | **YOLOv8** 공식 라이브러리. (객체 인식 구현 시 사용) |
 | **faster-whisper** | **1.2.1** | **OpenAI Whisper**의 고속 추론 버전. (CTranslate2 기반 최적화) |
 | **NumPy** | **1.26.4** | **⚠️ 중요:** PyTorch/OpenCV 호환성을 위해 **2.0 미만**으로 고정됨. |
+| **openai** | **2.16.0** | **LLM Interface.** AI 비서 구현용. |
 
 - **비전 및 센서 (Vision & Sensors)**
 
@@ -83,18 +214,22 @@ source install/setup.bash
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
-| **SpeechRecognition** | **3.14.5** | 오디오 입력 및 음성 인식 전처리 라이브러리 |
-| **PyAudio** | **0.2.11** | 마이크 하드웨어 제어 및 입출력 담당 (PortAudio 기반) |
+| **pulseaudio-utils** | (System) | **🆕 핵심 연결 도구.** Host(Jetson)의 오디오 서버와 **Socket** 통신 및 `pactl` 제어용. |
+| **alsa-utils** | **1.2.6** | **오디오 제어.** `aplay`, `amixer` 포함. (PulseAudio 플러그인을 통해 블루투스/HDMI 출력). |
+| **SoX** | **14.4.2** | **🆕 오디오 플레이어.** `play`, `rec` 명령어 포함. (딜레이 없는 재생 담당). |
+| **libsox-fmt-all** | (System) | **🆕 코덱 확장팩.** MP3, FLAC, OGG 등 다양한 포맷 재생 지원 라이브러리. |
 | **gTTS** | **2.5.4** | **Google Text-to-Speech.** 텍스트를 음성(mp3)으로 변환하는 라이브러리. |
-| **pulseaudio-utils** | 15.99.1 | **시스템 오디오 도구.** `pactl` 명령어로 마이크/스피커 ID 확인 가능. |
-| **SoX** | 14.4.2 | **오디오 처리 툴.** `play`, `rec` 명령어 포함 (mp3 재생 및 변환). |
-| **libasound2-plugins** | (latest) | **ALSA-PulseAudio 브릿지.** 도커-호스트 간 오디오 스트리밍 최적화 |
+| **SpeechRecognition** | **3.14.5** | 오디오 입력 및 음성 인식 전처리 라이브러리 |
+| **PyAudio** | **0.2.14** | 마이크 하드웨어 제어 및 입출력 담당 (PortAudio 기반) |
+| **libasound2-plugins** | (latest) | **ALSA 플러그인.** PulseAudio와의 호환성 브리지 역할. |
 
 - **하드웨어 제어 (Hardware Control)**
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
 | **adafruit-circuitpython-servokit** | 1.3.22 | **PCA9685** (서보모터) 제어용. **DS3218MG** 구동 핵심 라이브러리. |
+| **adafruit-extended-bus** | **(Latest / 0.0.0-auto)** | **🆕 I2C Bus Helper.** Jetson의 특정 I2C 포트(Bus 7 등)를 강제로 지정하여 제어하기 위한 리눅스 전용 도구. |
+| **setuptools_scm** | **(Latest)** | **🔧 빌드 의존성.** `adafruit-extended-bus` 설치 시 패키지 메타데이터 생성을 위해 필수적으로 요구되는 도구. |
 | **adafruit-circuitpython-mpu6050** | 1.3.5 | **MPU-6050** IMU 센서 데이터 수신용. Blinka 위에서 동작. |
 | **libgpiod / python3-libgpiod** | (System) | **⭐ 최신 표준:** **HC-SR04P(초음파)** 제어를 위한 리눅스 표준 GPIO 도구. |
 | **adafruit-blinka** | 8.23.0 | CircuitPython 라이브러리를 리눅스에서 쓰게 해주는 미들웨어. |
@@ -106,9 +241,19 @@ source install/setup.bash
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
 | **paho-mqtt** | **2.1.0** | **MQTT 프로토콜** 클라이언트. 로봇(Pub)과 웹 서버(Sub) 간의 실시간 데이터 송수신 담당. |
+| **Flask** | **3.1.2** | **🆕 웹 서버 프레임워크.** 로봇 제어 API 및 대시보드 백엔드 구동. |
+| **Flask-Cors** | **6.0.2** | **🆕 보안 설정.** 외부 웹 페이지(React/Vue 등)에서 로봇 API 호출 시 CORS 에러 방지. |
+| **mosquitto-clients** | (System) | **🆕 터미널 디버깅 툴.** `mosquitto_pub/sub` 명령어로 통신 상태 즉시 확인 가능. |
 | **web_video_server** | (Binary) | **웹 비디오 스트리밍.** ROS 이미지 토픽을 웹 브라우저 호환(MJPEG) 포맷으로 변환하여 실시간 송출. |
 
-## 4. 하드웨어 환경 요약 (v2.1)
+- **개발 및 디버깅 도구 (Development & Debugging Tools)**
+
+| **패키지명** | **버전** | **설명 및 특이사항** |
+| --- | --- | --- |
+| **ros-humble-plotjuggler-ros** | (System) | **⭐ 데이터 시각화 도구.** ROS 2 토픽 및 rosbag 데이터를 실시간 그래프로 분석. |
+| **rosbag2** | (System) | **데이터 녹화 도구.** ROS 2 표준 기록 장치 (.mcap 형식 지원). |
+
+## 4. 하드웨어 환경 요약 (v2.6)
 
 - **컴퓨팅 및 제어 (Computing & Control)**
 
@@ -117,7 +262,8 @@ source install/setup.bash
 | **Main Board** | **Jetson Orin Nano 8GB** | 1 | **Robot Brain.** 6-core ARM CPU / 1024-core Ampere GPU. RAM 8GB(Shared). |
 | **Storage** | **Samsung PM9B1 (256GB)** | 1 | **Main Storage (NVMe M.2).** PCIe 4.0 지원. OS, 라이브러리, 데이터셋 저장용 고속 I/O. |
 | **Swap Memory** | **19.7GB (Total)** | 1 | **ZRAM + 16GB NVMe File.** 8GB RAM의 한계를 극복하기 위한 대용량 가상 메모리 구성 완료. (OOM 방지) |
-| **PWM Driver** | **PCA9685** (16-ch) | 2 | **Servo Controller.** I2C 통신. 다리 2개(서보 6개)씩 분산 연결. (주소: `0x40`, `0x41` 예상) |
+| **PWM Driver** | **PCA9685** (16-ch) | 2 | **Servo Controller.** I2C 통신. **0x40(후방), 0x41(전방)** 분산 연결.
+※ *상세 채널 매핑은 4.4 참조.* |
 | **Camera** | **Stereo Camera** | 1 | **Visual Perception.** Depth 정보 취득 및 RTAB-Map 기반 VSLAM 수행. |
 
 - **구동부 (Actuation - Legs)**
@@ -131,8 +277,8 @@ source install/setup.bash
 
 | **구분** | **모델명** | **수량** | **설명 및 역할** |
 | --- | --- | --- | --- |
-| **IMU** | **MPU-6050** (6-axis) | 1 | **Body State Estimation.** 가속도/자이로 데이터를 통해 로봇의 기울기(Roll/Pitch) 및 관성 정보 측정. RL 관측(Observation)의 핵심 데이터. |
-| **Ultrasonic** | **HC-SR04P** | 1 | **Obstacle Detection.** 전방 장애물 거리 측정. 3.3V 호환 모델(P) 사용으로 레벨 시프터 없이 GPIO 연결. |
+| **IMU** | **MPU-6050** (6-axis) | 1 | **Body State Estimation.** 가속도/자이로 측정. (Roll/Pitch 추정 및 RL 관측 데이터). |
+| **Ultrasonic** | **HC-SR04P** | 2 | **Obstacle Detection.** 전방 장애물 거리 측정. 3.3V 호환 모델(P) 사용. |
 
 - **전원부 (Power System)**
 
@@ -140,6 +286,17 @@ source install/setup.bash
 | --- | --- | --- | --- |
 | **Battery** | **Tenanty 2S LiPo** | 2 | **7.4V 5200mAh.** 1개 장착(교체형). 순간 고전류(서보 12개) 방전 대응. (하나는 예비용) |
 | **Step-Down** | **HW-083** (DC-DC) | 2 | **Voltage Regulator.** 배터리 전압(7.4~8.4V)을 서보 적정 전압(6V) 및 로직 전압(5V)으로 강하하여 공급. |
+
+- **서보 모터 상세 핀맵 (Servo Pin Mapping) [중요]**
+    - *코드 생성(Python/C++) 및 제어 로직 작성 시 아래 매핑 테이블을 기준으로 합니다.*
+    - **Joint Index:** [0: Knee, 1: Shoulder, 2: Hip] 순서 (또는 [15: Knee, 14: Shoulder, 13: Hip]).
+
+| **PCA9685 주소** | **다리 위치 (Leg)** | **관절 (Joint) 및 핀 번호 (Pin Channel)** | **비고** |
+| --- | --- | --- | --- |
+| **0x40 (Rear)** | **오른쪽 뒷다리 (RR)** | **무릎(0)**, **어깨(1)**, **골반(2)** | Rear Right |
+| **0x40 (Rear)** | **왼쪽 뒷다리 (RL)** | **무릎(15)**, **어깨(14)**, **골반(13)** | Rear Left |
+| **0x41 (Front)** | **오른쪽 앞다리 (FR)** | **무릎(0)**, **어깨(1)**, **골반(2)** | Front Right |
+| **0x41 (Front)** | **왼쪽 앞다리 (FL)** | **무릎(15)**, **어깨(14)**, **골반(13)** | Front Left |
 
 ## 5. 프로젝트 폴더 구조
 
@@ -175,6 +332,7 @@ source install/setup.bash
     │   ├── 📦 gae_msgs/        # [메시지] 커스텀 msg/srv 인터페이스 정의
     │   │
     │   └── 📦 gae_perception/  # [인식] YOLOv8, SLAM, OpenCV
+    │       ├── 📂 maps/        # vslam 맵 저장
     │       ├── 📂 config/      # 카메라/SLAM 설정 파일
     │       ├── 📂 launch/      # 인식 모듈 개별 실행 파일
     │       └── 📂 weights/     # YOLOv8 학습 가중치 파일 (.pt)
@@ -292,6 +450,51 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ```python
 ssafy@ubuntu:~/gae_ws/src$ sudo chown -R ssafy:ssafy ~/gae_ws/src
+```
+
+- **Jetson Orin Nano I2C 관련**
+
+![Screenshot from 2026-02-04 11-32-31.png](attachment:fe28bd06-8f1f-4608-828d-ff30260ced32:Screenshot_from_2026-02-04_11-32-31.png)
+
+- **NVIDIA Orin Nano의 내부 I2C 인터페이스 매핑**
+
+| 물리 핀 | Jetson pinmux 이름 | SoC I2C 컨트롤러 | Linux 디바이스 |
+| --- | --- | --- | --- |
+| 27 / 28 | i2c2 | **c240000.i2c** | **/dev/i2c-1** |
+| 3 / 5 | i2c8 | c250000.i2c | /dev/i2c-7 |
+- **명령어 예시**
+
+```python
+ssafy@ubuntu:~$ sudo i2cdetect -y -r 7
+[sudo] password for ssafy: 
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: 40 41 -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+70: 70 -- -- -- -- -- -- --                         
+ssafy@ubuntu:~$ sudo i2cdetect -y -r 1
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:                         -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- UU -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: UU -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --                         
+ssafy@ubuntu:~$ i2cdetect -l
+i2c-0   i2c             3160000.i2c                             I2C adapter
+i2c-1   i2c             c240000.i2c                             I2C adapter
+i2c-2   i2c             3180000.i2c                             I2C adapter
+i2c-4   i2c             Tegra BPMP I2C adapter                  I2C adapter
+i2c-5   i2c             31b0000.i2c                             I2C adapter
+i2c-7   i2c             c250000.i2c                             I2C adapter
+i2c-9   i2c             NVIDIA SOC i2c adapter 0                I2C adapter
+ssafy@ubuntu:~$ 
 ```
 
 ## 8. 협업 컨벤션(규칙)

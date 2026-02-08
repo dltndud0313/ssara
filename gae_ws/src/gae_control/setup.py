@@ -20,7 +20,7 @@ setup(
         (os.path.join('share', package_name, 'config'), glob('config/*')),
         
         # Models (강화학습 모델 등)
-        (os.path.join('share', package_name, 'models'), glob('models/*')),
+        (os.path.join('share', package_name, 'models'), glob('gae_control/models/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -33,6 +33,7 @@ setup(
         'console_scripts': [
             # 나중에 노드 실행 파일 등록하는 곳
             # 'node_name = gae_control.node_file:main'
+            'imu_state_estimator = gae_control.imu_state_estimator:main',
         ],
     },
 )
