@@ -93,12 +93,12 @@ def generate_launch_description():
     )
 
     # 9. [판단] 장애물 회피 및 주행 결정 노드
-    decision_node = Node(
-        package='gae_perception',
-        executable='decision_node',
-        name='decision_node',
-        output='screen'
-    )
+    # decision_node = Node(
+    #     package='gae_perception',
+    #     executable='decision_node',
+    #     name='decision_node',
+    #     output='screen'
+    # )
 
     # 10. [통신] MQTT 위치 전송 브릿지
     pose_bridge = Node(
@@ -107,7 +107,7 @@ def generate_launch_description():
         name='pose_bridge',
         output='screen',
         parameters=[{
-            'broker_address': '192.168.100.246',  # MQTT 브로커 주소
+            'broker_address': '127.0.0.1',  # MQTT 브로커 주소
             'port': 1884,
             'topic': 'robot/pose'
         }], # <--- 리스트 끝에 쉼표 확인!
@@ -123,6 +123,6 @@ def generate_launch_description():
         depth_to_web_node,
         web_server_node,
         inference_node, 
-        decision_node,  
+        #decision_node,  
         pose_bridge,    
     ])
