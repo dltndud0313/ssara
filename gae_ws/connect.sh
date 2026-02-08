@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 1. 컨테이너 이름을 본인 ID로 강제 고정
-CONTAINER_NAME="jjy092801"
+CONTAINER_NAME="taeyeon"
 
 # 2. X11 시각화 권한 (Isaac Sim이나 GUI 띄울 때 필요)
 if [ -n "$DISPLAY" ]; then

@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 class VoiceAssistant:
     def __init__(self, mp3_dir):
         print("🤖 AI 모델 로딩 중... (고감도 음성 인식)")
-        self.model = WhisperModel("base", device="cpu", compute_type="int8")
+        self.model = WhisperModel("tiny", device="cpu", compute_type="int8")
         self.recognizer = sr.Recognizer()
         
         # 음성 인식 민감도 설정
