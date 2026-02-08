@@ -285,12 +285,13 @@
         </svg>
         <span>기록</span>
       </button>
-      <button class="nav-item active">
+      <button class="nav-item" @click="$router.push('/help')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
-        <span>내 정보</span>
+        <span>도움말</span>
       </button>
     </nav>
   </div>

@@ -5,6 +5,9 @@ export const useRecordsStore = defineStore('records', () => {
   // 저장된 미디어 목록
   const mediaItems = ref([]);
 
+  // 비디오 Blob 메모리 저장소 (localStorage에 Blob을 넣을 수 없으므로)
+  const videoBlobs = new Map();
+
   // 상수
   const MAX_FAVORITES = 20;
   const RECENT_DAYS = 2;
@@ -71,14 +74,15 @@ export const useRecordsStore = defineStore('records', () => {
     return item;
   };
 
-  // 동영상 추가 (프레임들로 구성)
-  const addVideo = (frames, duration, title = '') => {
+  // 동영상 추가 (실제 WebM Blob)
+  const addVideo = (videoBlob, duration, title = '', thumbnail = '') => {
     const now = new Date();
     const id = Date.now();
     const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    // 첫 프레임을 썸네일로 사용
-    const thumbnail = frames.length > 0 ? frames[0] : '';
+    // Blob URL 생성 및 메모리 저장
+    const blobUrl = URL.createObjectURL(videoBlob);
+    videoBlobs.set(id, { blob: videoBlob, url: blobUrl });
 
     const item = {
       id,
@@ -88,14 +92,18 @@ export const useRecordsStore = defineStore('records', () => {
       timestamp: now.getTime(),
       duration: duration,
       thumbnail: thumbnail,
-      frames: frames,
-      url: thumbnail,
+      url: blobUrl,
       isFavorite: false
     };
 
     mediaItems.value.unshift(item);
     saveToStorage();
     return item;
+  };
+
+  // 비디오 Blob 가져오기
+  const getVideoBlob = (id) => {
+    return videoBlobs.get(id) || null;
   };
 
   // 즐겨찾기 토글 (최대 20개 제한)
@@ -219,6 +227,7 @@ export const useRecordsStore = defineStore('records', () => {
     allItemsGroupedByDate,
     addPhoto,
     addVideo,
+    getVideoBlob,
     toggleFavorite,
     deleteItem,
     deleteItems,

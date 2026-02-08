@@ -11,7 +11,7 @@
             <line x1="15" y1="9" x2="15.01" y2="9"/>
           </svg>
         </div>
-        <h1 class="app-name">파트라슈 봇</h1>
+        <h1 class="app-name">SSARA</h1>
         <p class="app-desc">소중한 가족을 위한 스마트 강아지</p>
       </div>
 

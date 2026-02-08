@@ -15,6 +15,9 @@ import HelpView from '../views/HelpView.vue'
 import BatteryView from '../views/BatteryView.vue'
 import NavigationView from '../views/NavigationView.vue'
 import RecordsView from '../views/RecordsView.vue'
+import AiAssistantView from '../views/AiAssistantView.vue'
+import MemoView from '../views/MemoView.vue'
+import CommunityView from '../views/CommunityView.vue'
 
 const routes = [
   {
@@ -103,6 +106,24 @@ const routes = [
     path: '/records',
     name: 'Records',
     component: RecordsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/ai-assistant',
+    name: 'AiAssistant',
+    component: AiAssistantView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/memo',
+    name: 'Memo',
+    component: MemoView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/community',
+    name: 'Community',
+    component: CommunityView,
     meta: { requiresAuth: true }
   }
 ]

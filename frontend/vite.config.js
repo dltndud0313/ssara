@@ -47,10 +47,17 @@ export default defineConfig({
       },
       // 로봇 카메라 스트림 프록시 (CORS 우회)
       '/robot-stream': {
-        target: 'http://192.168.100.246:8080',
+        target: 'http://172.30.1.49:8080',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/robot-stream/, '')
+      },
+      // GMS (SSAFY OpenAI Proxy) CORS 우회
+      '/gms-api': {
+        target: 'https://gms.ssafy.io',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/gms-api/, '/gmsapi')
       }
     }
   }

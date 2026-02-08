@@ -1,5 +1,5 @@
 ############################
-# IDE / Editor (공통)
+# IDE / Editor
 ############################
 .idea/
 .vscode/
@@ -8,7 +8,7 @@
 .claude/
 
 ############################
-# OS / System junk
+# OS / System
 ############################
 .DS_Store
 Thumbs.db
@@ -21,10 +21,9 @@ nul
 .env.local
 .env.*.local
 !.env.example
-backend/src/main/resources/application-dev.yml
 
 ############################
-# Backend runtime / logs / DB
+# Backend
 ############################
 backend/db_data/
 backend/server.log
@@ -49,7 +48,7 @@ mosquitto/data/
 mosquitto/log/
 
 ############################
-# Media / 기타 (전역 공통)
+# Media / Binary
 ############################
 *.mp3
 *.wav
@@ -60,8 +59,3 @@ mosquitto/log/
 *.log
 npm-debug.log*
 yarn-debug.log*
-
-############################
-# Personal notes
-############################
-taeyeon_solve.md

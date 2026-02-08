@@ -108,8 +108,15 @@ public class MqttService {
             double x = json.has("x") ? json.get("x").asDouble() : 0;
             double y = json.has("y") ? json.get("y").asDouble() : 0;
             robot.updateLocation(String.format("(%.2f, %.2f)", x, y));
+
+            if (json.has("state")) {
+                String state = json.get("state").asText();
+                RobotStatus status = "active".equals(state) ? RobotStatus.ONLINE : RobotStatus.OFFLINE;
+                robot.updateStatus(status);
+            }
+
             robotRepository.save(robot);
-            log.info("Robot pose updated: {}", robot.getLocation());
+            log.info("Robot pose updated: location={}, status={}", robot.getLocation(), robot.getStatus());
         } catch (Exception e) {
             log.error("Failed to update robot pose", e);
         }

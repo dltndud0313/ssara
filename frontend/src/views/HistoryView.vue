@@ -50,10 +50,6 @@
           <span v-if="day.hasLogs && day.isCurrentMonth && !day.isOld" class="day-dot"></span>
         </button>
       </div>
-
-      <div class="selected-date-info">
-        <span class="selected-date-label">{{ formatFullDate(selectedDate) }}</span>
-      </div>
     </div>
 
     <!-- 2주 보관 안내 배너 -->
@@ -82,42 +78,6 @@
     </div>
 
     <main class="content">
-      <!-- 선택된 날짜 요약 카드 -->
-      <section class="summary-card">
-        <div class="summary-header">
-          <span class="summary-label">{{ isToday ? '오늘의 활동' : formatDisplayDate(selectedDate) + ' 활동' }}</span>
-          <span class="summary-date">{{ formatWeekday(selectedDate) }}</span>
-        </div>
-        <div class="summary-stats">
-          <div class="stat-item">
-            <div class="stat-icon walk">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M13 4v16M7 4v16M3 8l4-4 4 4M13 20l4-4 4 4"/>
-              </svg>
-            </div>
-            <div class="stat-content">
-              <span class="stat-value">{{ selectedSummary.walkTime }}분</span>
-              <span class="stat-label">산책 시간</span>
-            </div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-icon events">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-              </svg>
-            </div>
-            <div class="stat-content">
-              <span class="stat-value">{{ selectedSummary.totalEvents }}건</span>
-              <span class="stat-label">알림</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- 미디어 기록 섹션 -->
       <section class="media-section">
         <div class="section-header">
@@ -179,6 +139,42 @@
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                 </svg>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 선택된 날짜 요약 카드 -->
+      <section class="summary-card">
+        <div class="summary-header">
+          <span class="summary-label">{{ isToday ? '오늘의 활동' : formatDisplayDate(selectedDate) + ' 활동' }}</span>
+          <span class="summary-date">{{ formatWeekday(selectedDate) }}</span>
+        </div>
+        <div class="summary-stats">
+          <div class="stat-item">
+            <div class="stat-icon walk">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 4v16M7 4v16M3 8l4-4 4 4M13 20l4-4 4 4"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ selectedSummary.walkTime }}분</span>
+              <span class="stat-label">산책 시간</span>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-icon events">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <span class="stat-value">{{ selectedSummary.totalEvents }}건</span>
+              <span class="stat-label">알림</span>
             </div>
           </div>
         </div>
@@ -315,12 +311,13 @@
         </svg>
         <span>기록</span>
       </button>
-      <button class="nav-item" @click="$router.push('/profile')">
+      <button class="nav-item" @click="$router.push('/help')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
-        <span>내 정보</span>
+        <span>도움말</span>
       </button>
     </nav>
   </div>
@@ -414,8 +411,8 @@ const calendarDays = computed(() => {
     });
   }
 
-  // 다음 달 날짜 (6주 = 42일 채우기)
-  const remainingDays = 42 - days.length;
+  // 다음 달 날짜 (4주 = 28일 채우기)
+  const remainingDays = 28 - days.length;
   for (let day = 1; day <= remainingDays; day++) {
     const date = new Date(currentYear.value, currentMonth.value + 1, day);
     date.setHours(0, 0, 0, 0);

@@ -1,130 +1,121 @@
 <template>
   <div class="features-page">
-    <!-- Features Grid -->
+    <!-- Features Content -->
     <section class="features-section">
       <div class="features-container">
         <div class="section-header">
-          <h2 class="section-title">주요 기능</h2>
-          <p class="section-desc">우리 아이를 위한 스마트 케어 솔루션</p>
+          <h2 class="section-title">추가 기능</h2>
+          <p class="section-desc">소중한 가족을 위한 스마트 케어 솔루션</p>
         </div>
 
         <div class="features-grid">
           <!-- Healthcare Card -->
           <article class="feature-card" @click="$router.push('/healthcare')">
-            <div class="card-badge">HEALTH</div>
-            <div class="card-inner">
-              <h3 class="card-title">헬스케어</h3>
-              <p class="card-description">
-                AI 기반 건강 모니터링으로<br/>반려견의 건강을 체계적으로 관리하세요.
-              </p>
-              <div class="card-buttons">
-                <span class="btn-learn">
-                  자세히 보기
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </span>
-              </div>
-            </div>
-            <div class="card-image-wrapper">
+            <div class="card-badge health">HEALTH</div>
+            <div class="card-image-wrapper health-bg">
               <img
-                src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600&q=80"
+                src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=400&q=70"
                 alt="Healthcare"
                 class="card-image"
                 loading="lazy"
               />
+            </div>
+            <div class="card-inner">
+              <h3 class="card-title">헬스케어</h3>
+              <p class="card-description">건강 모니터링으로<br/>체계적인 관리</p>
             </div>
           </article>
 
           <!-- AI Assistant Card -->
           <article class="feature-card" @click="$router.push('/ai-assistant')">
             <div class="card-badge ai">AI</div>
-            <div class="card-inner">
-              <h3 class="card-title">AI 비서</h3>
-              <p class="card-description">
-                AI 비서에게 반려견 관련<br/>궁금한 점을 물어보세요.
-              </p>
-              <div class="card-buttons">
-                <span class="btn-learn">
-                  자세히 보기
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </span>
-              </div>
-            </div>
-            <div class="card-image-wrapper">
+            <div class="card-image-wrapper ai-bg">
               <img
-                src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&q=80"
+                src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&q=70"
                 alt="AI Assistant"
                 class="card-image"
                 loading="lazy"
               />
             </div>
+            <div class="card-inner">
+              <h3 class="card-title">AI 비서</h3>
+              <p class="card-description">가족과 대화 및<br/>명령 수행</p>
+            </div>
           </article>
-        </div>
 
-        <!-- Second Row -->
-        <div class="features-grid">
           <!-- Memo Card -->
           <article class="feature-card" @click="$router.push('/memo')">
             <div class="card-badge memo">MEMO</div>
-            <div class="card-inner">
-              <h3 class="card-title">메모장</h3>
-              <p class="card-description">
-                반려견 관련 메모를<br/>간편하게 기록하고 관리하세요.
-              </p>
-              <div class="card-buttons">
-                <span class="btn-learn">
-                  자세히 보기
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </span>
-              </div>
-            </div>
-            <div class="card-image-wrapper">
+            <div class="card-image-wrapper memo-bg">
               <img
-                src="https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&q=80"
+                src="https://images.unsplash.com/photo-1517842645767-c639042777db?w=400&q=70"
                 alt="Memo"
                 class="card-image"
                 loading="lazy"
               />
             </div>
+            <div class="card-inner">
+              <h3 class="card-title">메모장</h3>
+              <p class="card-description">간편하게<br/>기록하고 관리</p>
+            </div>
           </article>
 
           <!-- Community Card -->
-          <article class="feature-card dark" @click="$router.push('/community')">
+          <article class="feature-card" @click="$router.push('/community')">
             <div class="card-badge community">COMMUNITY</div>
-            <div class="card-inner">
-              <h3 class="card-title">커뮤니티</h3>
-              <p class="card-description">
-                다른 반려인들과 정보를 공유하고<br/>소통해보세요.
-              </p>
-              <div class="card-buttons">
-                <span class="btn-learn light">
-                  자세히 보기
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </span>
-              </div>
-            </div>
-            <div class="card-image-wrapper">
+            <div class="card-image-wrapper community-bg">
               <img
-                src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=600&q=80"
+                src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=400&q=70"
                 alt="Community"
                 class="card-image"
                 loading="lazy"
               />
             </div>
+            <div class="card-inner">
+              <h3 class="card-title">커뮤니티</h3>
+              <p class="card-description">정보 공유 및<br/>소통의 공간</p>
+            </div>
+          </article>
+
+          <!-- Screen Card - Coming Soon -->
+          <article class="feature-card coming-soon">
+            <div class="card-badge screen">SCREEN</div>
+            <div class="card-image-wrapper screen-bg">
+              <div class="coming-soon-overlay">
+                <svg class="coming-soon-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+                <span class="coming-soon-label">추가 예정</span>
+              </div>
+            </div>
+            <div class="card-inner">
+              <h3 class="card-title">화면 보기</h3>
+              <p class="card-description">실시간 카메라<br/>영상 확인</p>
+            </div>
+          </article>
+
+          <!-- Location Card - Coming Soon -->
+          <article class="feature-card coming-soon">
+            <div class="card-badge location">LOCATION</div>
+            <div class="card-image-wrapper location-bg">
+              <div class="coming-soon-overlay">
+                <svg class="coming-soon-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span class="coming-soon-label">추가 예정</span>
+              </div>
+            </div>
+            <div class="card-inner">
+              <h3 class="card-title">위치 추적</h3>
+              <p class="card-description">실시간 위치<br/>확인 및 추적</p>
+            </div>
           </article>
         </div>
       </div>
     </section>
-
-    <!-- Bottom Spacer -->
-    <div class="bottom-spacer"></div>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
@@ -151,12 +142,13 @@
         </svg>
         <span>기록</span>
       </button>
-      <button class="nav-item" @click="$router.push('/profile')">
+      <button class="nav-item" @click="$router.push('/help')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
-        <span>내 정보</span>
+        <span>도움말</span>
       </button>
     </nav>
   </div>
@@ -164,239 +156,209 @@
 
 <script setup>
 // FeaturesView - 반려견 스마트 케어 기능 페이지
+// Galaxy S20 Ultra 최적화 (412 x 915 CSS viewport, 20:9 비율)
 </script>
 
 <style scoped>
 .features-page {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #fafafa;
+  background: #f2f4f6;
   color: #191f28;
 }
 
 /* Features Section */
 .features-section {
-  background: #f2f4f6;
-  padding: 56px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+  overflow: hidden;
 }
 
 .features-container {
-  max-width: 980px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 500px;
+  width: 100%;
   margin: 0 auto;
 }
 
 .section-header {
   text-align: center;
-  margin-bottom: 36px;
+  padding: 24px 0 14px;
+  flex-shrink: 0;
 }
 
 .section-title {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 800;
   color: #191f28;
   letter-spacing: -0.02em;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .section-desc {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
   color: #8b95a1;
 }
 
+/* 2x3 Grid - S20 Ultra 비율 최적화 */
 .features-grid {
+  flex: 1;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.features-grid:last-child {
-  margin-bottom: 0;
-}
-
-@media (min-width: 768px) {
-  .features-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin-bottom: 20px;
-  }
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+  min-height: 0;
+  padding-bottom: 8px;
 }
 
 /* Feature Card */
 .feature-card {
   position: relative;
   background: #fff;
-  border-radius: 20px;
-  padding: 32px 28px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid transparent;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-}
-
-.feature-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 20px;
-  padding: 1px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
-}
-
-.feature-card:hover::before {
-  opacity: 1;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  min-height: 0;
 }
 
 .feature-card:active {
-  transform: translateY(-2px) scale(0.99);
+  transform: scale(0.96);
 }
 
-.feature-card.dark {
-  background: #191f28;
-}
-
-.feature-card.dark .card-title {
-  color: #fff;
-}
-
-.feature-card.dark .card-description {
-  color: #8b95a1;
-}
-
+/* Badge */
 .card-badge {
   position: absolute;
-  top: 20px;
-  left: 24px;
-  font-size: 10px;
+  top: 8px;
+  left: 8px;
+  font-size: 8px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.6px;
   color: #fff;
-  background: #ff6b6b;
-  padding: 5px 10px;
-  border-radius: 6px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  z-index: 2;
 }
 
-.card-badge.ai {
-  background: #8b5cf6;
-}
+.card-badge.health { background: #ff6b6b; }
+.card-badge.ai { background: #8b5cf6; }
+.card-badge.memo { background: #f59e0b; }
+.card-badge.community { background: #10b981; }
+.card-badge.screen { background: #3b82f6; }
+.card-badge.location { background: #ec4899; }
 
-.card-badge.memo {
-  background: #f59e0b;
-}
-
-.card-badge.community {
-  background: #10b981;
-}
-
-.card-inner {
-  position: relative;
-  z-index: 1;
-}
-
-.card-title {
-  font-size: 26px;
-  font-weight: 700;
-  color: #191f28;
-  letter-spacing: -0.02em;
-  margin-bottom: 10px;
-  margin-top: 24px;
-}
-
-.card-description {
-  font-size: 15px;
-  font-weight: 500;
-  color: #6b7684;
-  line-height: 1.6;
-  margin-bottom: 20px;
-  letter-spacing: -0.01em;
-}
-
-.card-buttons {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
-}
-
-.btn-learn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #3182f6;
-  transition: all 0.2s;
-}
-
-.btn-learn:hover {
-  gap: 10px;
-}
-
-.btn-learn.light {
-  color: #fff;
-}
-
-.btn-learn svg {
-  transition: transform 0.2s;
-}
-
-.btn-learn:hover svg {
-  transform: translateX(2px);
-}
-
+/* Image Area */
 .card-image-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 16px;
+  flex: 1;
   overflow: hidden;
+  min-height: 0;
+  position: relative;
 }
 
-.card-image {
-  width: 100%;
-  max-width: 280px;
-  height: auto;
-  max-height: 200px;
-  object-fit: cover;
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.feature-card:hover .card-image {
-  transform: scale(1.05);
-}
-
-/* Bottom Spacer & Nav */
-.bottom-spacer {
-  height: 100px;
-}
-
-.bottom-nav {
-  position: fixed;
+.card-image-wrapper::after {
+  content: '';
+  position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  max-width: 600px;
-  margin: 0 auto;
-  height: 72px;
-  background: rgba(255, 255, 255, 0.92);
+  height: 30px;
+  background: linear-gradient(transparent, rgba(255,255,255,0.6));
+  pointer-events: none;
+}
+
+.health-bg { background: #fee2e2; }
+.ai-bg { background: #ede9fe; }
+.memo-bg { background: #fef3c7; }
+.community-bg { background: #d1fae5; }
+.screen-bg { background: #dbeafe; }
+.location-bg { background: #fce7f3; }
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feature-card:active .card-image {
+  transform: scale(1.05);
+}
+
+/* Coming Soon Card */
+.feature-card.coming-soon {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.feature-card.coming-soon:active {
+  transform: none;
+}
+
+.coming-soon-overlay {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.coming-soon-icon {
+  color: #b0b8c1;
+}
+
+.coming-soon-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b95a1;
+  letter-spacing: -0.01em;
+}
+
+/* Text Area */
+.card-inner {
+  flex-shrink: 0;
+  padding: 10px 12px 12px;
+  text-align: center;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #191f28;
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+}
+
+.card-description {
+  font-size: 10px;
+  font-weight: 500;
+  color: #8b95a1;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+/* Bottom Nav */
+.bottom-nav {
+  flex-shrink: 0;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -410,11 +372,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   flex: 1 1 0%;
   width: 100%;
   min-width: 0;
-  padding: 8px 0;
+  padding: 6px 0;
   color: #b0b8c1;
   background: none;
   border: none;
@@ -423,13 +385,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.nav-item:hover {
-  color: #6b7684;
-}
-
 .nav-item svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .nav-item span {
@@ -440,36 +398,21 @@
 
 .nav-item.active {
   color: #3182f6;
+  outline: none;
+  box-shadow: none;
+  border: none;
 }
 
-/* Mobile Responsive */
-@media (max-width: 767px) {
-  .features-section {
-    padding: 48px 16px;
-  }
-
-  .section-title {
-    font-size: 24px;
-  }
-
-  .feature-card {
-    padding: 28px 24px;
-  }
-
-  .card-title {
-    font-size: 22px;
-  }
-
-  .card-description {
-    font-size: 14px;
-  }
+.nav-item:focus,
+.nav-item:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .card-image,
-  .feature-card,
-  .btn-learn svg {
+  .feature-card {
     transition: none;
   }
 }
