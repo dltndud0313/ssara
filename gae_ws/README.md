@@ -1,4 +1,4 @@
-# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.5)
+# 🐕 GAE 4족 보행 로봇 통합 개발 환경 가이드 (v2.6)
 
 > Docker 기반의 All-in-One 개발 환경입니다.
 로컬에 복잡하게 라이브러리 설치할 필요 없이, 스크립트 하나로 개발을 시작하세요.
@@ -42,7 +42,7 @@ cd ~/workspaces/[본인이름]
 
 ```bash
 # 1. 워크스페이스 이동
-cd /root/gae_ws
+cd ~/gae_ws
 
 # 2. 전체 패키지 빌드
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
@@ -113,6 +113,33 @@ source install/setup.bash
 ros2 launch gae_control control.launch.py
 ```
 
+- **도커 이미지 업데이트 (관리자용)**
+
+```python
+# 컨테이너 → 새 버전 이미지로 commit
+docker commit 115834c5ce60 jjy092801/gae-system:v2.6
+
+# Docker Hub 로그인 (이미 돼 있으면 스킵)
+# docker login
+
+# 새 버전 이미지 push
+docker push jjy092801/gae-system:v2.6
+
+# docker-compose.yml 수정
+services:
+  gae-system:
+    image: jjy092801/gae-system:vn.n
+    
+# 기존 컨테이너 내리기
+docker compose down
+
+# 새 이미지 pull
+docker compose pull
+
+# 재배포
+docker compose up -d
+```
+
 ### 3. Git 협업 규칙
 
 - **개인 설정**: 컨테이너 접속 후 **딱 한 번만** 실행하세요. 이후에는 컨테이너를 껐다 켜도 유지됩니다.
@@ -142,9 +169,9 @@ git config --local user.email "your_email@example.com"
 파이썬(.py) 코드만 수정했다면 colcon build를 다시 할 필요가 없습니다! (단, --symlink-install 옵션으로 빌드했을 경우에만 해당)
 > 
 
-## 3. 소프트웨어 환경 요약 (v2.5)
+## 3. 소프트웨어 환경 요약 (v2.6)
 
-이미지(`gae-system:v2.5`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
+이미지(`gae-system:v2.6`) 안에 아래 의존성들이 모두 세팅되어 있습니다. **따로 설치하지 마세요!**
 
 - **시스템 및 코어 (System & Core)**
 
@@ -187,13 +214,14 @@ git config --local user.email "your_email@example.com"
 
 | **패키지명** | **버전** | **설명 및 특이사항** |
 | --- | --- | --- |
+| **pulseaudio-utils** | (System) | **🆕 핵심 연결 도구.** Host(Jetson)의 오디오 서버와 **Socket** 통신 및 `pactl` 제어용. |
+| **alsa-utils** | **1.2.6** | **오디오 제어.** `aplay`, `amixer` 포함. (PulseAudio 플러그인을 통해 블루투스/HDMI 출력). |
+| **SoX** | **14.4.2** | **🆕 오디오 플레이어.** `play`, `rec` 명령어 포함. (딜레이 없는 재생 담당). |
+| **libsox-fmt-all** | (System) | **🆕 코덱 확장팩.** MP3, FLAC, OGG 등 다양한 포맷 재생 지원 라이브러리. |
+| **gTTS** | **2.5.4** | **Google Text-to-Speech.** 텍스트를 음성(mp3)으로 변환하는 라이브러리. |
 | **SpeechRecognition** | **3.14.5** | 오디오 입력 및 음성 인식 전처리 라이브러리 |
 | **PyAudio** | **0.2.14** | 마이크 하드웨어 제어 및 입출력 담당 (PortAudio 기반) |
-| **gTTS** | **2.5.4** | **Google Text-to-Speech.** 텍스트를 음성(mp3)으로 변환하는 라이브러리. |
-| **pulseaudio-utils** | 15.99.1 | **시스템 오디오 도구.** `pactl` 명령어로 마이크/스피커 ID 확인 가능. |
-| **SoX** | 14.4.2 | **오디오 처리 툴.** `play`, `rec` 명령어 포함. |
-| **libsox-fmt-all** | (System) | **🆕 오디오 코덱 확장.** MP3, OGG, FLAC 등 다양한 포맷 재생을 위한 필수 라이브러리. |
-| **libasound2-plugins** | (latest) | **ALSA-PulseAudio 브릿지.** 도커-호스트 간 오디오 스트리밍 최적화 |
+| **libasound2-plugins** | (latest) | **ALSA 플러그인.** PulseAudio와의 호환성 브리지 역할. |
 
 - **하드웨어 제어 (Hardware Control)**
 
@@ -225,7 +253,7 @@ git config --local user.email "your_email@example.com"
 | **ros-humble-plotjuggler-ros** | (System) | **⭐ 데이터 시각화 도구.** ROS 2 토픽 및 rosbag 데이터를 실시간 그래프로 분석. |
 | **rosbag2** | (System) | **데이터 녹화 도구.** ROS 2 표준 기록 장치 (.mcap 형식 지원). |
 
-## 4. 하드웨어 환경 요약 (v2.5)
+## 4. 하드웨어 환경 요약 (v2.6)
 
 - **컴퓨팅 및 제어 (Computing & Control)**
 
