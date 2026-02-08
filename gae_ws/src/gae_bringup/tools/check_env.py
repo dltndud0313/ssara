@@ -55,7 +55,11 @@ def check_command(command, version_flag="--version"):
             if len(output) > 50: output = output[:47] + "..."
             print(f"[✅ OK] System Tool: {cmd_name:<17} : {output}")
         else:
-            print(f"[❌ MISSING] System Tool: {cmd_name:<17} : 실행 불가")
+            # play 같은 명령어는 인자 없이 실행하면 도움말을 띄우며 에러코드를 뱉을 수 있음
+            if cmd_name == "play": # play 명령어 예외 처리
+                 print(f"[✅ OK] System Tool: {cmd_name:<17} : 설치됨 (SoX Component)")
+            else:
+                 print(f"[❌ MISSING] System Tool: {cmd_name:<17} : 실행 불가")
     except Exception:
         print(f"[❌ MISSING] System Tool: {cmd_name:<17} : 명령어를 찾을 수 없음")
 
@@ -68,7 +72,7 @@ def check_apt_package(package_name):
 
 def run_system_check():
     print("="*60)
-    print("🚀 GAE Robot 환경 진단 (v2.3 Updated)")
+    print("🚀 GAE Robot 환경 진단 (v2.5 Updated)")
     print("="*60)
 
     # 0. System & Core
@@ -92,7 +96,7 @@ def run_system_check():
         print(f"[✅ OK] JetPack Version             : {jetpack_ver}")
         print(f"[✅ OK] L4T Driver Version          : {l4t_ver}")
     except FileNotFoundError:
-        print(f"[⚠️ INFO] Jetson L4T Check            : 파일 없음 (일반 PC 또는 Docker?)")
+        print(f"[⚠️ INFO] Jetson L4T Check           : 파일 없음 (일반 PC 또는 Docker?)")
     
     # OS Check
     try:
@@ -115,6 +119,11 @@ def run_system_check():
     check_command("nvcc", "--version") # CUDA
     check_command("jtop", "--version") # jetson-stats
 
+    # [v2.5] Dependency Fix Check
+    print("  --- Dependency Safety Check ---")
+    check_python_package("Click", "click", "8.1.7")
+    check_python_package("Blinker", "blinker", "1.9.0")
+
     # 1. AI & Deep Learning
     print("\n---------- 1. AI & Deep Learning ----------")
     check_python_package("numpy", "numpy", "1.26.4")
@@ -122,29 +131,27 @@ def run_system_check():
     torch_mod = check_python_package("torch", "torch", "2.2.0")
     if torch_mod:
         cuda_ok = torch_mod.cuda.is_available()
-        print(f"   ㄴ CUDA 가속 활성화?              : {'✅ YES' if cuda_ok else '❌ NO (GPU 안 잡힘!)'}")
+        print(f"   ㄴ CUDA 가속 활성화?               : {'✅ YES' if cuda_ok else '❌ NO (GPU 안 잡힘!)'}")
         if cuda_ok:
-            print(f"   ㄴ 감지된 GPU 장치                : {torch_mod.cuda.get_device_name(0)}")
+            print(f"   ㄴ 감지된 GPU 장치                 : {torch_mod.cuda.get_device_name(0)}")
 
     check_python_package("torchvision", "torchvision", "0.17.2")
     check_python_package("ultralytics", "ultralytics", "8.4.9")
     check_python_package("faster-whisper", "faster_whisper", "1.2.1")
-    check_python_package("openai", "openai", "2.16.0") # [NEW] Added Check
+    check_python_package("openai", "openai", "2.16.0") 
     check_python_package("torch2trt", "torch2trt", "0.5.0")
 
     # 2. Vision & Sensors
     print("\n---------- 2. Vision & Sensors ----------")
     if cv2:
-        print(f"[✅ OK] OpenCV (System)              : {cv2.__version__} (Target: 4.9.0)")
+        print(f"[✅ OK] OpenCV (System)               : {cv2.__version__} (Target: 4.9.0)")
         try:
             count = cv2.cuda.getCudaEnabledDeviceCount()
-            print(f"   ㄴ OpenCV CUDA 가속?              : {'✅ YES' if count > 0 else '❌ NO (CPU 전용 - 성능저하 주의)'}")
-            # if count > 0:
-                # cv2.cuda.printCudaDeviceInfo(0) 
+            print(f"   ㄴ OpenCV CUDA 가속?               : {'✅ YES' if count > 0 else '❌ NO (CPU 전용 - 성능저하 주의)'}")
         except:
             print(f"   ㄴ OpenCV CUDA 확인 불가")
     else:
-        print(f"[❌ MISSING] OpenCV (System)              : import 실패")
+        print(f"[❌ MISSING] OpenCV (System)               : import 실패")
 
     check_ros_package("astra_camera")
     check_ros_package("astra_camera_msgs")
@@ -161,6 +168,8 @@ def run_system_check():
     check_apt_package("pulseaudio-utils")
     check_apt_package("libasound2-plugins")
     check_command("sox", "--version")
+    check_command("play", "--help") # [v2.5] Play check
+    check_apt_package("libsox-fmt-all") # [v2.5] Codec Check
 
     # 4. Hardware Control
     print("\n---------- 4. Hardware Control ----------")
@@ -171,18 +180,21 @@ def run_system_check():
     check_python_package("adafruit-blinka", "adafruit_blinka", "8.23.0")
     check_python_package("smbus2", "smbus2", "0.6.0")
     
-    # [NEW] v2.2 Added Hardware Libraries
     check_python_package("adafruit-extended-bus", "adafruit_extended_bus") 
     check_python_package("setuptools_scm", "setuptools_scm") 
     
     # New Standard GPIO
-    # [참고] python3-libgpiod는 'gpiod'로 import 됩니다.
     check_python_package("python3-libgpiod", "gpiod") 
     check_apt_package("gpiod")
 
     # 5. Communication & Interface
     print("\n---------- 5. Communication & Interface ----------")
     check_python_package("paho-mqtt", "paho.mqtt", "2.1.0")
+    # [v2.5] Web & IoT Tools
+    check_python_package("Flask", "flask", "3.1.2")
+    check_python_package("Flask-Cors", "flask_cors", "6.0.2")
+    check_apt_package("mosquitto-clients")
+    
     check_ros_package("web_video_server")
 
     print("="*60)

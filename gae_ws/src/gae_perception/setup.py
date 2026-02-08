@@ -7,25 +7,27 @@ package_name = 'gae_perception'
 setup(
     name=package_name,
     version='0.0.0',
-    # 패키지 내의 모든 파이썬 모듈을 자동으로 찾습니다.
     packages=find_packages(exclude=['test']),
     data_files=[
-        # 패키지 등록을 위한 리소스 파일
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         
-        
-        # Launch 파일 설치 (launch 폴더 내의 모든 .launch.py 파일)
+        # Launch 파일 설치
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
         
-        # Map 파일 설치 (maps 폴더 내의 모든 파일)
+        # [수정 1] maps 폴더가 최상위에도 있다면 유지, 없다면 빈 리스트가 되어 문제 없음
         (os.path.join('share', package_name, 'maps'), glob('maps/*')),
         
-        # Config 파일 설치 (config 폴더 내의 모든 파일)
-        (os.path.join('share', package_name, 'config'), glob('config/*')),
+        # [수정 2] Config 폴더 처리 (여기가 핵심!)
+        # config 폴더 안의 '파일'만 골라냄 (maps 같은 폴더는 제외)
+        (os.path.join('share', package_name, 'config'), [f for f in glob('config/*') if os.path.isfile(f)]),
         
-        # Weights 파일 설치 (YOLO 가중치 등)
+        # [수정 3] Config 내부의 maps 폴더를 따로 등록
+        # config/maps 안에 있는 파일들을 install/share/.../config/maps 로 복사
+        (os.path.join('share', package_name, 'config', 'maps'), glob('config/maps/*')),
+        
+        # Weights 파일 설치
         (os.path.join('share', package_name, 'weights'), glob('weights/*')),
     ],
     install_requires=['setuptools'],
@@ -37,18 +39,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            # [형식] '실행명령어 = 패키지명.파일명:함수명'
-            
-            # 1. 깊이 영상 변환 노드
             'depth_converter = gae_perception.depth_to_web:main',
-            
-            # 2. 판단 제어 노드
             'decision_node = gae_perception.decision_node:main',
-            
-            # 3. 객체 인식 노드
             'inference_node = gae_perception.inference_node:main',
-
-            # 4. [추가됨] 위치 정보 MQTT 통신 브릿지
             'pose_bridge = gae_perception.pose_bridge:main',
         ],
     },
