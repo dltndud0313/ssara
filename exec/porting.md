@@ -47,12 +47,12 @@
 | 항목 | 버전 / 상세 |
 |------|-------------|
 | Board | NVIDIA Jetson (JetPack) |
-| OS | Ubuntu 20.04 / 22.04 |
+| OS | Ubuntu 22.04 |
 | ROS | ROS2 Humble |
-| Docker Image | gae-system:v1.6 (torch, torchvision, opencv 내장) |
-| Python | 3.8+ |
+| Docker Image | gae-system:v2.6 (torch, torchvision, opencv 내장) |
+| Python | 3.10 |
 | SLAM | RTAB-Map |
-| Camera | Astra Pro (RGB-D) |
+| Camera | Orbbec Astra Pro (RGB-D) |
 
 ---
 
