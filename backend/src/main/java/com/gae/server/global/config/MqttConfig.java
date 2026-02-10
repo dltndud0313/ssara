@@ -36,6 +36,12 @@ public class MqttConfig {
     @Value("${mqtt.qos}")
     private int qos;
 
+    @Value("${mqtt.username:}")
+    private String mqttUsername;
+
+    @Value("${mqtt.password:}")
+    private String mqttPassword;
+
     private static final String[] SUBSCRIBE_TOPICS = {
             "robot/status",
             "robot/pose",
@@ -49,6 +55,10 @@ public class MqttConfig {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
         MqttConnectOptions options = new MqttConnectOptions();
         options.setServerURIs(new String[]{brokerUrl});
+        if (mqttUsername != null && !mqttUsername.isEmpty()) {
+            options.setUserName(mqttUsername);
+            options.setPassword(mqttPassword.toCharArray());
+        }
         options.setCleanSession(true);
         options.setAutomaticReconnect(true);
         options.setConnectionTimeout(10);

@@ -4,6 +4,8 @@ import com.gae.server.api.auth.dto.TokenResponse;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import com.gae.server.global.exception.BusinessException;
+import org.springframework.http.HttpStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -61,7 +63,7 @@ public class JwtTokenProvider {
         Claims claims = parseClaims(accessToken);
 
         if (claims.get("auth") == null) {
-            throw new RuntimeException("권한 정보가 없는 토큰입니다.");
+            throw new BusinessException("권한 정보가 없는 토큰입니다.", HttpStatus.UNAUTHORIZED);
         }
 
         Collection<? extends GrantedAuthority> authorities =
@@ -90,10 +92,6 @@ public class JwtTokenProvider {
     }
 
     private Claims parseClaims(String accessToken) {
-        try {
-            return Jwts.parser().verifyWith(key).build().parseSignedClaims(accessToken).getPayload();
-        } catch (ExpiredJwtException e) {
-            return e.getClaims();
-        }
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(accessToken).getPayload();
     }
 }

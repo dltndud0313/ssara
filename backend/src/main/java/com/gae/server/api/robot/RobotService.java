@@ -6,6 +6,7 @@ import com.gae.server.domain.member.Member;
 import com.gae.server.domain.member.MemberRepository;
 import com.gae.server.domain.robot.Robot;
 import com.gae.server.domain.robot.RobotRepository;
+import com.gae.server.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,10 @@ public class RobotService {
 
     public RobotResponse getMyRobot(String email) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("로그인 유저 정보가 없습니다."));
+                .orElseThrow(() -> new BusinessException("로그인 유저 정보가 없습니다."));
 
         Robot robot = robotRepository.findByMemberId(member.getId())
-                .orElseThrow(() -> new RuntimeException("등록된 로봇이 없습니다."));
+                .orElseThrow(() -> new BusinessException("등록된 로봇이 없습니다."));
 
         return RobotResponse.from(robot);
     }
@@ -31,10 +32,10 @@ public class RobotService {
     @Transactional
     public RobotResponse updateMyRobot(String email, RobotUpdateRequest request) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("로그인 유저 정보가 없습니다."));
+                .orElseThrow(() -> new BusinessException("로그인 유저 정보가 없습니다."));
 
         Robot robot = robotRepository.findByMemberId(member.getId())
-                .orElseThrow(() -> new RuntimeException("등록된 로봇이 없습니다."));
+                .orElseThrow(() -> new BusinessException("등록된 로봇이 없습니다."));
 
         if (request.name() != null) {
             robot.updateName(request.name());
