@@ -16,40 +16,35 @@ import time
 from datetime import datetime, timedelta, timezone
 
 # ============================================================
-#  stt_module_fast.py (Integrated Version)
-#  - Base: HEAD (Whisper tiny + MP3 Caching for Speed)
-#  - Feature: Remote (Dynamic Mic, Map Search, YOLO, Nav)
+#  stt_module_fast.py  (stt_module_map.py 기반 최적화 버전)
+#  - Whisper tiny (base 대비 ~3배 빠름)
+#  - 고정 응답 MP3 캐시 (시작 시 미리 생성 → 재사용)
+#  - gTTS 실패 시 espeak 오프라인 fallback
 # ============================================================
 
-# 자주 사용하는 고정 응답 (속도 향상용 캐시)
+# 자주 사용하는 고정 응답 목록 (시작 시 미리 MP3로 생성)
 CACHED_RESPONSES = {
     "네! 말씀하세요.": "cache_ne.mp3",
-    "네!": "cache_ne_short.mp3",
     "멈추겠습니다.": "cache_stop.mp3",
     "앞으로 갑니다.": "cache_forward.mp3",
     "보호자에게 메시지를 보냈습니다.": "cache_guardian.mp3",
     "빨간불입니다! 정지합니다.": "cache_redlight.mp3",
     "초록불입니다! 출발합니다.": "cache_green.mp3",
     "정지선을 확인했습니다.": "cache_marker.mp3",
-    "다시 말씀해 주세요.": "cache_retry.mp3",
-    "앞에 아무것도 없습니다.": "cache_nothing.mp3",
-    "현재 SLAM 기반으로 위치를 추적하고 있습니다.": "cache_slam.mp3"
 }
+
 
 class VoiceAssistant:
     def __init__(self, mp3_dir):
-        print("[Fast] AI 모델 로딩 중... (Tiny + Optimized)")
-        # [최적화 1] tiny 모델 사용
+        print("[Fast] AI 모델 로딩 중... (Optimized)")
+
+        # [최적화 1] tiny 모델 사용 (base 대비 ~3배 빠름, 명령어 인식 충분)
         self.model = WhisperModel("tiny", device="cpu", compute_type="int8")
 
         self.recognizer = sr.Recognizer()
-        # [기능 1] 마이크 감도 설정 (Remote의 Dynamic 설정 채택 - 소음 환경 대응)
-        self.recognizer.energy_threshold = 300
-        self.recognizer.dynamic_energy_threshold = True
-        self.recognizer.dynamic_energy_adjustment_damping = 0.15
-        self.recognizer.dynamic_energy_ratio = 1.5
-        self.recognizer.pause_threshold = 0.8
-        
+        self.recognizer.energy_threshold = 2000
+        self.recognizer.dynamic_energy_threshold = False
+        self.recognizer.pause_threshold = 0.6
         self.mp3_dir = mp3_dir
         self.mic_index = self.find_pulse_mic()
         print(f"[Fast] 마이크 번호: {self.mic_index}")
@@ -64,8 +59,10 @@ class VoiceAssistant:
             if not os.path.exists(filepath):
                 try:
                     gTTS(text=text, lang='ko').save(filepath)
+                    print(f"[Cache] 생성 완료: {filename}")
                 except Exception as e:
                     # 인터넷 안 되면 espeak로 생성
+                    print(f"[Cache] gTTS 실패, espeak 대체: {filename}")
                     os.system(f'espeak -v ko "{text}" --stdout | sox - {filepath} 2>/dev/null')
 
     def find_pulse_mic(self):
@@ -85,13 +82,7 @@ class VoiceAssistant:
         try:
             mic = sr.Microphone(device_index=self.mic_index, sample_rate=16000)
             with mic as source:
-                # [기능 2] 주변 소음 적응 (Remote)
-                self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
-                
-                self.play_beep("start")
-                print("👂 말씀하세요...")
-                audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=8)
-                self.play_beep("end")
+                audio = self.recognizer.listen(source, phrase_time_limit=5)
                 return audio
         except:
             return None
@@ -106,12 +97,12 @@ class VoiceAssistant:
             wav_file.writeframes(audio.frame_data)
         wav_buffer.seek(0)
 
-        # [기능 3] 통합된 단어 힌트
         context_words = (
-            "싸라, 사라, 자라, 병원, 약국, 집, 싸피, 싹키, 사피, 좌키,"
-            "데리러, 젤리로, 도와줘, 위치, 정지, 출발,"
-            "앞으로 가, 멈춰, 검색, 찾아줘, 어디야, 편의점, 은행,"
-            "앞에 뭐가 보여, 상황, 근처"
+            "싸라, 사라, 자라, 병원, 약국, 싸피, 싹키, 사피, 좌키,"
+            "캬원, 평원, 정원, 경원, 헬원, 액수로, 압도도, 앗으로,"
+            "데리러, 젤리로, 데리고, 고자에게, 도와줘, 위치,"
+            "지금 몇 시야, 멈췄어, 멈췄니,"
+            "앞으로 가, 멈춰, 가줘, 해줘"
         )
 
         segments, _ = self.model.transcribe(
@@ -125,7 +116,7 @@ class VoiceAssistant:
 
     def speak(self, text, filename="response.mp3"):
         """[최적화 3] 캐시 히트 → 즉시 재생 / 미스 → gTTS → 실패 시 espeak"""
-        print(f"🗣️ 로봇: {text}")
+        print(f"[Fast] 로봇: {text}")
 
         # 캐시에 있으면 바로 재생 (네트워크 불필요)
         if text in CACHED_RESPONSES:
@@ -148,23 +139,17 @@ class VoiceAssistant:
 class VoiceNode(Node):
     def __init__(self):
         super().__init__('voice_node')
-        
+
         pkg_path = "/root/gae_ws/src/gae_interface"
         self.mp3_dir = os.path.join(pkg_path, "mp3")
         os.makedirs(self.mp3_dir, exist_ok=True)
         self.log_file = os.path.join(pkg_path, "conversation_logs", f"log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
 
-        # ROS2 토픽
         self.command_pub = self.create_publisher(String, '/gae_interface/voice/command', 10)
         self.status_pub = self.create_publisher(String, '/gae_interface/voice/status', 10)
         self.yolo_sub = self.create_subscription(Int32, '/yolo_detection/class_id', self.yolo_callback, 10)
-        
-        # [기능 4] YOLO 상태 변수 (Remote)
-        self.latest_object = "아무것도 없습니다"
-        self.last_warning_time = 0
-        
-        # MQTT 설정
+
         self.mqtt_client = mqtt.Client()
         self.mqtt_client.on_connect = self.on_mqtt_connect
         self.mqtt_client.on_message = self.on_mqtt_message
@@ -174,26 +159,23 @@ class VoiceNode(Node):
         except: pass
 
         self.bot = VoiceAssistant(self.mp3_dir)
-        
+        self.last_warning_time = 0
+
         threading.Thread(target=self.voice_loop, daemon=True).start()
-        print("✅ 로봇 '싸라' 준비 완료 (Fast + Features)")
+        print("[Fast] 로봇 '싸라' 준비 완료 (Optimized)")
 
     def yolo_callback(self, msg):
         class_id = msg.data
-        # [기능 4] 객체 정보 업데이트
-        if class_id == 0: self.latest_object = "빨간불"
-        elif class_id == 1: self.latest_object = "초록불"
-        elif class_id == 2: self.latest_object = "횡단보도 정지선"
-        else: self.latest_object = "장애물"
-
-        # 빨간불 자동 멈춤
-        if class_id == 0 and time.time() - self.last_warning_time > 3.0:
+        if time.time() - self.last_warning_time < 4.0: return
+        if class_id == 0:  # 빨간불 → 정지
             self.execute_node("stop", "빨간불입니다! 정지합니다.")
             self.last_warning_time = time.time()
-
-    def on_mqtt_connect(self, client, userdata, flags, rc):
-        client.subscribe("/gae/web_to_voice")
-        client.subscribe("/gae/map_to_voice")
+        elif class_id == 1:  # 초록불 → 출발
+            self.execute_node("forward", "초록불입니다! 출발합니다.")
+            self.last_warning_time = time.time()
+        elif class_id == 2:  # 정지선(토끼) → 정지
+            self.execute_node("stop", "정지선을 확인했습니다.")
+            self.last_warning_time = time.time()
 
     def on_mqtt_message(self, client, userdata, msg):
         try:
@@ -203,8 +185,7 @@ class VoiceNode(Node):
 
             if msg.topic == "/gae/map_to_voice":
                 msg_type = data.get("type", "")
-                
-                # [기능 5] 네비게이션 가이드 (Remote)
+
                 if msg_type == "nav_guide":
                     guide_text = data.get("text", "")
                     self.bot.speak(guide_text)
@@ -213,13 +194,18 @@ class VoiceNode(Node):
 
                 target = data.get("target", "목적지")
                 distance = data.get("distance", "")
-                response = f"{target}까지 {distance} 남았습니다." if distance else f"{target} 위치를 찾았습니다."
+                if distance: response = f"{target}까지 {distance} 남았습니다."
+                else: response = f"{target} 위치를 찾았습니다. 안내를 시작합니다."
                 self.bot.speak(response)
                 self.log_and_send(f"[로봇] {response}", "robot")
 
             elif msg.topic == "/gae/web_to_voice":
                 self.bot.speak(f"보호자 메시지. {data.get('text', payload)}")
         except: pass
+
+    def on_mqtt_connect(self, client, userdata, flags, rc):
+        client.subscribe("/gae/web_to_voice")
+        client.subscribe("/gae/map_to_voice")
 
     def mqtt_publish(self, topic, message, msg_type="conversation"):
         try:
@@ -230,8 +216,10 @@ class VoiceNode(Node):
     def log_and_send(self, message, msg_type="conversation", send_to_web=True):
         kst = timezone(timedelta(hours=9))
         kst_now = datetime.now(kst)
+
         with open(self.log_file, 'a', encoding='utf-8') as f:
             f.write(f"[{kst_now.strftime('%H:%M:%S')}] {message}\n")
+
         if send_to_web:
             self.mqtt_publish("/gae/voice_to_web", message, msg_type)
 
@@ -252,20 +240,19 @@ class VoiceNode(Node):
     def process_command(self, text):
         self.log_and_send(f"[사용자] {text}", "user")
 
-        # 0. Whisper 환각 필터 (HEAD)
+        # 0. Whisper 환각 필터 (반복 텍스트 무시)
         if len(set(text.split(','))) <= 2 and text.count(',') >= 2:
             self.log_and_send(f"[무시] 반복 감지: {text}", "system", send_to_web=False)
             return
 
         # 1. 긴급 정지
-        if any(x in text for x in ['서', '서!', '멈춰', '스톱', '정지', '위험해', '그만']):
+        if any(x in text for x in ['서', '서!', '멈춰', '스톱', '정지', '위험해', '멈췄어', '멈췄니', '그만', '서라']):
             self.execute_node("stop", "멈추겠습니다.")
             return
 
-        # 2. 호출어
+        # 2. 호출어 → "네! 말씀하세요" → 다음 명령 대기
         if any(text.startswith(x) for x in ['싸라', '사라', '자라']):
             self.bot.speak("네! 말씀하세요.")
-            # 후속 명령 대기 (HEAD 방식)
             audio = self.bot.listen()
             if audio:
                 follow_up = self.bot.transcribe(audio)
@@ -274,52 +261,58 @@ class VoiceNode(Node):
                     self.process_command(follow_up)
             return
 
-        # 3. 보호자/위치
-        if any(x in text for x in ['데리', '보호자', '도와', '젤리', '위치', '어디', '연락']):
+        # 3. 보호자 메시지
+        if any(x in text for x in ['데리', '보호자', '도와', '젤리', '탈리', '고자', '연락', '위치']):
             msg_text = "사용자가 호출했습니다."
-            if "위치" in text: msg_text = "사용자가 현재 위치를 전송했습니다."
-            elif "도와" in text: msg_text = "🚨 긴급 도움 요청!"
-            elif any(x in text for x in ['와', '데리']): msg_text = "사용자가 데리러 와달라고 요청했습니다."
-            
+
+            if "위치" in text:
+                msg_text = "사용자가 현재 위치를 전송했습니다. (광주 싸피 1층)"
+            elif any(x in text for x in ['와', '데리', '젤리', '탈리']):
+                msg_text = "사용자가 데리러 와달라고 요청했습니다."
+            elif any(x in text for x in ['도와', '살려']):
+                msg_text = "사용자가 긴급 도움을 요청했습니다!"
+
             self.mqtt_publish("/gae/voice_to_web", msg_text, "emergency")
             self.bot.speak("보호자에게 메시지를 보냈습니다.")
+            self.log_and_send(f"[로봇] {msg_text}", "robot")
             return
 
-        # 4. 시간 (Remote 방식 - AM/PM)
+        # 4. 시간
         if any(x in text for x in ['시간', '몇 시', '언제']):
             kst = timezone(timedelta(hours=9))
             now = datetime.now(kst)
-            ampm = "오전" if now.hour < 12 else "오후"
-            h = now.hour if now.hour <= 12 else now.hour - 12
-            response = f"현재 {ampm} {h}시 {now.minute}분입니다."
+            response = f"현재 {now.hour}시 {now.minute}분입니다."
             self.bot.speak(response)
+            self.log_and_send(f"[로봇] {response}", "robot")
             return
 
-        # 5. 장소 검색 (Remote의 강력한 검색 기능)
-        places = ['병원', '약국', '집', '은행', '빵집', '카페', '편의점', '버스', '정류장', '싸피']
-        if any(x in text for x in ['근처', '어디', '찾아', '가자'] + places):
-            target = next((p for p in places if p in text), "목적지")
+        # 5. 장소 (오타 포함)
+        if any(x in text for x in ['병원', '약국', '집', '싸피', '싹키', '사피', '좌키', '은행', '가자', '가줘', '평원', '캬원', '정원', '경원', '헬원']):
+            target = "싸피" if any(s in text for s in ['싸피', '싹키', '좌키']) else \
+                     ("병원" if any(s in text for s in ['병원', '평원', '캬원', '정원', '경원', '헬원']) else \
+                     ("약국" if "약국" in text else \
+                     ("집" if "집" in text else "목적지")))
+
             response = f"{target} 위치를 검색하고 있습니다."
             self.bot.speak(response)
+            self.log_and_send(f"[로봇] {response}", "robot")
             self.mqtt_publish("/gae/voice_to_map", target, "search")
             return
 
-        # 6. 전방 상황 (YOLO) - "앞에 뭐 있어?" (Remote)
-        if any(x in text for x in ['뭐가', '뭐 있', '보여', '상황', '앞에']):
-            self.bot.speak(f"앞에 {self.latest_object}가 있습니다.")
-            return
-
-        # 7. 주행 명령
-        if any(x in text for x in ['앞으로', '전진', '출발']):
+        # 6. 주행 명령 (오타 포함)
+        if any(x in text for x in ['앞으로', '전진', '출발', '액수로', '압도도', '앗으로', '아프로']):
             self.execute_node("forward", "앞으로 갑니다.")
             return
 
-        # 8. 현재 위치 질문 (SLAM - HEAD)
-        if any(x in text for x in ['어디야', '여기 어디', '현재 위치']):
+        # 7. 현재 위치 질문
+        if any(x in text for x in ['어디야', '어디에', '여기 어디', '현재 위치']):
             self.bot.speak("현재 SLAM 기반으로 위치를 추적하고 있습니다.")
+            self.log_and_send(f"[로봇] 위치 질문 응답", "robot")
             return
 
-        self.bot.speak("다시 말씀해 주세요.")
+        # 8. 미인식 명령 → 안내 응답
+        self.bot.speak("다시 한번 말씀해 주세요.")
+        self.log_and_send(f"[미인식] {text}", "system", send_to_web=False)
 
     def voice_loop(self):
         while rclpy.ok():
@@ -331,6 +324,7 @@ class VoiceNode(Node):
                 if text and len(text) >= 1:
                     print(f"[Fast] 인식: {text}")
                     self.process_command(text)
+
 
 def main(args=None):
     rclpy.init(args=args)
