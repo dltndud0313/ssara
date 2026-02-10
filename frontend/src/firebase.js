@@ -45,7 +45,6 @@ export const requestFCMToken = async () => {
       vapidKey: 'YOUR_VAPID_KEY'
     });
 
-    console.log('FCM Token:', token);
     return token;
   } catch (error) {
     console.error('FCM Token error:', error);
@@ -58,7 +57,6 @@ export const onForegroundMessage = (callback) => {
   if (!messaging) return;
 
   onMessage(messaging, (payload) => {
-    console.log('Foreground message:', payload);
     callback(payload);
   });
 };

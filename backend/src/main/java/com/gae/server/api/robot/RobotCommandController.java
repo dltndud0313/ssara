@@ -4,10 +4,17 @@ import com.gae.server.api.mqtt.MqttGateway;
 import com.gae.server.api.mqtt.MqttService;
 import com.gae.server.api.robot.dto.NavRequest;
 import com.gae.server.api.robot.dto.VelocityRequest;
+import com.gae.server.domain.member.Member;
+import com.gae.server.domain.member.MemberRepository;
+import com.gae.server.domain.robot.RobotRepository;
+import com.gae.server.global.exception.BusinessException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,12 +30,16 @@ public class RobotCommandController {
 
     private final MqttGateway mqttGateway;
     private final MqttService mqttService;
+    private final MemberRepository memberRepository;
+    private final RobotRepository robotRepository;
 
     private static final String TOPIC_CMD_MOVE = "robot/cmd/move";
     private static final String TOPIC_CMD_NAV = "robot/cmd/nav";
 
     @PostMapping("/home")
-    public ResponseEntity<Map<String, String>> goHome() {
+    public ResponseEntity<Map<String, String>> goHome(@AuthenticationPrincipal UserDetails userDetails) {
+        verifyRobotOwner(userDetails.getUsername());
+
         String payload = "{\"action\": \"home\"}";
         mqttGateway.sendToMqtt(payload, TOPIC_CMD_MOVE);
 
@@ -41,7 +52,9 @@ public class RobotCommandController {
     }
 
     @PostMapping("/stop")
-    public ResponseEntity<Map<String, String>> stop() {
+    public ResponseEntity<Map<String, String>> stop(@AuthenticationPrincipal UserDetails userDetails) {
+        verifyRobotOwner(userDetails.getUsername());
+
         String payload = "{\"action\": \"stop\"}";
         mqttGateway.sendToMqtt(payload, TOPIC_CMD_MOVE);
 
@@ -54,7 +67,11 @@ public class RobotCommandController {
     }
 
     @PostMapping("/nav")
-    public ResponseEntity<Map<String, String>> navigate(@RequestBody NavRequest request) {
+    public ResponseEntity<Map<String, String>> navigate(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody NavRequest request) {
+        verifyRobotOwner(userDetails.getUsername());
+
         String payload = String.format("{\"x\": %s, \"y\": %s}", request.x(), request.y());
         mqttGateway.sendToMqtt(payload, TOPIC_CMD_NAV);
 
@@ -72,7 +89,11 @@ public class RobotCommandController {
      * Rosbridge Protocol 형식으로 MQTT 전송
      */
     @PostMapping("/control")
-    public ResponseEntity<Map<String, Object>> control(@Valid @RequestBody VelocityRequest request) {
+    public ResponseEntity<Map<String, Object>> control(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody VelocityRequest request) {
+        verifyRobotOwner(userDetails.getUsername());
+
         mqttService.sendVelocity(request.linearX(), request.angularZ());
 
         log.info("Velocity command: linearX={}, angularZ={}", request.linearX(), request.angularZ());
@@ -82,5 +103,12 @@ public class RobotCommandController {
                 "linearX", request.linearX(),
                 "angularZ", request.angularZ()
         ));
+    }
+
+    private void verifyRobotOwner(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("회원 정보를 찾을 수 없습니다."));
+        robotRepository.findByMemberId(member.getId())
+                .orElseThrow(() -> new BusinessException("등록된 로봇이 없습니다.", HttpStatus.FORBIDDEN));
     }
 }

@@ -10,6 +10,8 @@ import com.gae.server.domain.activity.ActivityLogRepository;
 import com.gae.server.domain.robot.Robot;
 import com.gae.server.domain.robot.RobotRepository;
 import com.gae.server.domain.robot.RobotStatus;
+import com.gae.server.global.exception.BusinessException;
+import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -167,7 +169,7 @@ public class MqttService {
             log.info("Velocity command sent: [{}] -> {}", TOPIC_CMD_VEL, payload);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize ROS message", e);
-            throw new RuntimeException("Failed to send velocity command", e);
+            throw new BusinessException("속도 명령 전송에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

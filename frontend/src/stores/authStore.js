@@ -65,7 +65,6 @@ export const useAuthStore = defineStore('auth', () => {
     const storedToken = getStoredToken()
     if (storedToken) {
       accessToken.value = storedToken
-      console.log('토큰 복원됨 (자동 로그인)')
       return true
     }
     return false
@@ -78,7 +77,6 @@ export const useAuthStore = defineStore('auth', () => {
    */
   function login(token, rememberMe = false) {
     saveToken(token, rememberMe)
-    console.log(`로그인 완료 (유지: ${rememberMe ? 'O' : 'X'})`)
   }
 
   /**
@@ -87,7 +85,6 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     clearAllTokens()
     localStorage.removeItem(REMEMBER_KEY)
-    console.log('로그아웃 완료')
     router.push('/')
   }
 
