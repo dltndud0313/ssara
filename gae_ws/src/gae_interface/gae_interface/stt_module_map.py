@@ -20,7 +20,7 @@ class VoiceAssistant:
         print("🤖 AI 모델 로딩 중... (Clean Web Log + Guardian Options)")
         self.model = WhisperModel("base", device="cpu", compute_type="int8")
         self.recognizer = sr.Recognizer()
-        self.recognizer.energy_threshold = 500
+        self.recognizer.energy_threshold = 2000
         self.recognizer.dynamic_energy_threshold = False
         self.recognizer.pause_threshold = 0.6 
         self.mp3_dir = mp3_dir

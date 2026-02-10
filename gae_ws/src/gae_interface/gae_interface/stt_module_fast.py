@@ -24,7 +24,7 @@ from datetime import datetime, timedelta, timezone
 
 # 자주 사용하는 고정 응답 목록 (시작 시 미리 MP3로 생성)
 CACHED_RESPONSES = {
-    "네!": "cache_ne.mp3",
+    "네! 말씀하세요.": "cache_ne.mp3",
     "멈추겠습니다.": "cache_stop.mp3",
     "앞으로 갑니다.": "cache_forward.mp3",
     "보호자에게 메시지를 보냈습니다.": "cache_guardian.mp3",
@@ -42,7 +42,7 @@ class VoiceAssistant:
         self.model = WhisperModel("tiny", device="cpu", compute_type="int8")
 
         self.recognizer = sr.Recognizer()
-        self.recognizer.energy_threshold = 500
+        self.recognizer.energy_threshold = 2000
         self.recognizer.dynamic_energy_threshold = False
         self.recognizer.pause_threshold = 0.6
         self.mp3_dir = mp3_dir
@@ -82,10 +82,7 @@ class VoiceAssistant:
         try:
             mic = sr.Microphone(device_index=self.mic_index, sample_rate=16000)
             with mic as source:
-                self.play_beep("start")
-                print("[Fast] 말씀하세요...")
-                audio = self.recognizer.listen(source, timeout=3, phrase_time_limit=5)
-                self.play_beep("end")
+                audio = self.recognizer.listen(source, phrase_time_limit=5)
                 return audio
         except:
             return None
@@ -253,9 +250,15 @@ class VoiceNode(Node):
             self.execute_node("stop", "멈추겠습니다.")
             return
 
-        # 2. 호출어
+        # 2. 호출어 → "네! 말씀하세요" → 다음 명령 대기
         if any(text.startswith(x) for x in ['싸라', '사라', '자라']):
-            self.bot.speak("네!")
+            self.bot.speak("네! 말씀하세요.")
+            audio = self.bot.listen()
+            if audio:
+                follow_up = self.bot.transcribe(audio)
+                if follow_up and len(follow_up) >= 1:
+                    print(f"[Fast] 후속 인식: {follow_up}")
+                    self.process_command(follow_up)
             return
 
         # 3. 보호자 메시지
