@@ -453,7 +453,6 @@ const sendCommand = async (cmd) => {
 // ==================== Lifecycle ====================
 onMounted(() => {
   robotStore.connectWebSocket();
-  robotStore.connectMqttPose();
   nextTick(() => {
     drawGrid();
     window.addEventListener('resize', drawGrid);

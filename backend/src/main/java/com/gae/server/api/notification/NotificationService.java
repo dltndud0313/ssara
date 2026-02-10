@@ -5,6 +5,7 @@ import com.gae.server.domain.member.Member;
 import com.gae.server.domain.member.MemberRepository;
 import com.gae.server.domain.notification.NotificationSetting;
 import com.gae.server.domain.notification.NotificationSettingRepository;
+import com.gae.server.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -121,6 +122,6 @@ public class NotificationService {
     private Member getCurrentMember() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException("회원을 찾을 수 없습니다."));
     }
 }

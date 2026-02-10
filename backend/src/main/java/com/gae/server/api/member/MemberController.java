@@ -2,6 +2,7 @@ package com.gae.server.api.member;
 
 import com.gae.server.api.member.dto.MemberResponse;
 import com.gae.server.api.member.dto.MemberUpdateRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,7 +32,7 @@ public class MemberController {
     @PatchMapping("/me")
     public ResponseEntity<String> updateMember(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody MemberUpdateRequest request) {
+            @Valid @RequestBody MemberUpdateRequest request) {
 
         memberService.updateMember(userDetails.getUsername(), request);
         return ResponseEntity.ok("회원 정보가 수정되었습니다.");

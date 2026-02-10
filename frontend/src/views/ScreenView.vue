@@ -824,7 +824,6 @@ watch(showChatOverlay, (val) => {
 // ==================== Lifecycle ====================
 onMounted(() => {
   robotStore.connectWebSocket()
-  robotStore.connectMqttPose()
   resetControlTimeout()
   connectMqtt()
   document.addEventListener('fullscreenchange', handleFullscreenChange)

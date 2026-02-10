@@ -8,6 +8,7 @@ import com.gae.server.domain.member.Member;
 import com.gae.server.domain.member.MemberRepository;
 import com.gae.server.domain.robot.Robot;
 import com.gae.server.domain.robot.RobotRepository;
+import com.gae.server.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -110,7 +111,7 @@ public class ActivityService {
     @Transactional
     public ActivityLog createLog(Long robotId, ActivityLog.ActivityType type, String message, String detail) {
         Robot robot = robotRepository.findById(robotId)
-                .orElseThrow(() -> new RuntimeException("로봇을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException("로봇을 찾을 수 없습니다."));
 
         return activityLogRepository.save(ActivityLog.builder()
                 .robot(robot)
@@ -123,9 +124,9 @@ public class ActivityService {
     private Robot getCurrentRobot() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException("회원을 찾을 수 없습니다."));
 
         return robotRepository.findByMemberId(member.getId())
-                .orElseThrow(() -> new RuntimeException("로봇을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException("로봇을 찾을 수 없습니다."));
     }
 }

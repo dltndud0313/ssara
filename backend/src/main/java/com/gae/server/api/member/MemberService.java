@@ -5,6 +5,7 @@ import com.gae.server.api.member.dto.MemberUpdateRequest;
 import com.gae.server.domain.member.Member;
 import com.gae.server.domain.member.MemberRepository;
 import com.gae.server.domain.robot.RobotRepository;
+import com.gae.server.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class MemberService {
     // 1. 내 정보 조회
     public MemberResponse getMyInfo(String email) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("로그인 유저 정보가 없습니다."));
+                .orElseThrow(() -> new BusinessException("로그인 유저 정보가 없습니다."));
 
         return MemberResponse.from(member);
     }
@@ -31,7 +32,7 @@ public class MemberService {
     @Transactional
     public void updateMember(String email, MemberUpdateRequest request) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("로그인 유저 정보가 없습니다."));
+                .orElseThrow(() -> new BusinessException("로그인 유저 정보가 없습니다."));
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             member.updatePassword(passwordEncoder.encode(request.getPassword()));
@@ -44,7 +45,7 @@ public class MemberService {
     @Transactional
     public void deleteMember(String email) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("로그인 유저 정보가 없습니다."));
+                .orElseThrow(() -> new BusinessException("로그인 유저 정보가 없습니다."));
 
         // 로봇 먼저 삭제
         robotRepository.findByMemberId(member.getId())

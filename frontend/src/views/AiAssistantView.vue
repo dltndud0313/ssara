@@ -201,6 +201,7 @@ import { ref, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import mqtt from 'mqtt'
 import { useAiAssistantStore } from '@/stores/aiAssistantStore'
 import { useRobotStore } from '@/stores/robotStore'
+import api from '@/api/index.js'
 
 // MQTT 설정
 const MQTT_BROKER = `ws://${import.meta.env.VITE_MQTT_BROKER_IP}:9001`
@@ -427,39 +428,22 @@ const sendAiSearch = async () => {
 
 // GMS (GPT)로 자연어 → 검색 키워드 추출
 const extractKeyword = async (naturalText) => {
-  const GMS_KEY = import.meta.env.VITE_GMS_API_KEY
-  if (!GMS_KEY) {
-    console.log('GMS 키 없음, 원문 그대로 사용:', naturalText)
-    return naturalText
-  }
-
   try {
-    const response = await fetch(
-      '/gms-api/api.openai.com/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GMS_KEY}`
+    const { data } = await api.post('/proxy/gms/chat', {
+      model: 'gpt-4.1-mini',
+      messages: [
+        {
+          role: 'system',
+          content: '사용자의 자연어에서 카카오맵 장소 검색 키워드를 추출하세요. 키워드만 출력하세요. 예: "밥 먹을 데" → "음식점", "커피 마시고 싶어" → "카페", "약 사야 해" → "약국"'
         },
-        body: JSON.stringify({
-          model: 'gpt-4.1-mini',
-          messages: [
-            {
-              role: 'system',
-              content: '사용자의 자연어에서 카카오맵 장소 검색 키워드를 추출하세요. 키워드만 출력하세요. 예: "밥 먹을 데" → "음식점", "커피 마시고 싶어" → "카페", "약 사야 해" → "약국"'
-            },
-            {
-              role: 'user',
-              content: naturalText
-            }
-          ],
-          max_tokens: 20,
-          temperature: 0
-        })
-      }
-    )
-    const data = await response.json()
+        {
+          role: 'user',
+          content: naturalText
+        }
+      ],
+      maxTokens: 20,
+      temperature: 0
+    })
     const keyword = data.choices?.[0]?.message?.content?.trim()
     console.log(`🤖 GPT 키워드 추출: "${naturalText}" → "${keyword}"`)
     return keyword || naturalText
@@ -496,36 +480,22 @@ const calcDirection = (robotLat, robotLng, robotTheta, placeLat, placeLng) => {
 
 // GPT로 시각장애인 친화적 안내 생성
 const generateGuide = async (question, placesInfo) => {
-  const GMS_KEY = import.meta.env.VITE_GMS_API_KEY
-  if (!GMS_KEY) return placesInfo.map(p => `${p.name} ${p.direction} ${p.distance}m`).join(', ')
-
   try {
-    const response = await fetch(
-      '/gms-api/api.openai.com/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GMS_KEY}`
+    const { data } = await api.post('/proxy/gms/chat', {
+      model: 'gpt-4.1-mini',
+      messages: [
+        {
+          role: 'system',
+          content: '시각장애인에게 주변 장소를 안내하는 도우미입니다. 로봇이 바라보는 방향 기준으로 왼쪽/오른쪽/앞쪽 방향과 걸음 수(1걸음=약 0.7m)로 안내하세요. 짧고 따뜻하게 말하세요. 가장 가까운 곳을 먼저 안내하세요.'
         },
-        body: JSON.stringify({
-          model: 'gpt-4.1-mini',
-          messages: [
-            {
-              role: 'system',
-              content: '시각장애인에게 주변 장소를 안내하는 도우미입니다. 로봇이 바라보는 방향 기준으로 왼쪽/오른쪽/앞쪽 방향과 걸음 수(1걸음=약 0.7m)로 안내하세요. 짧고 따뜻하게 말하세요. 가장 가까운 곳을 먼저 안내하세요.'
-            },
-            {
-              role: 'user',
-              content: `질문: "${question}"\n\n검색 결과:\n${placesInfo.map((p, i) => `${i + 1}. ${p.name} - ${p.direction} ${p.distance}m (약 ${p.steps}걸음), 주소: ${p.address}`).join('\n')}`
-            }
-          ],
-          max_tokens: 200,
-          temperature: 0.7
-        })
-      }
-    )
-    const data = await response.json()
+        {
+          role: 'user',
+          content: `질문: "${question}"\n\n검색 결과:\n${placesInfo.map((p, i) => `${i + 1}. ${p.name} - ${p.direction} ${p.distance}m (약 ${p.steps}걸음), 주소: ${p.address}`).join('\n')}`
+        }
+      ],
+      maxTokens: 200,
+      temperature: 0.7
+    })
     return data.choices?.[0]?.message?.content?.trim() || placesInfo.map(p => `${p.name} ${p.direction} ${p.distance}m`).join(', ')
   } catch (e) {
     console.error('GPT 안내 생성 실패:', e)
@@ -541,15 +511,10 @@ const isLocationQuery = (text) => {
 
 // 카카오 역지오코딩: GPS 좌표 → 주소
 const reverseGeocode = async (lat, lng) => {
-  const KAKAO_REST_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY
-  if (!KAKAO_REST_KEY) return null
-
   try {
-    const response = await fetch(
-      `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`,
-      { headers: { 'Authorization': `KakaoAK ${KAKAO_REST_KEY}` } }
-    )
-    const data = await response.json()
+    const { data } = await api.get('/proxy/kakao/geocode', {
+      params: { lat, lng }
+    })
     if (data.documents && data.documents.length > 0) {
       const doc = data.documents[0]
       if (doc.road_address) {
@@ -590,12 +555,6 @@ const handleLocationQuery = async (message) => {
 
 // 카카오 로컬 API로 주변 장소 검색
 const searchNearbyPlaces = async (message) => {
-  const KAKAO_REST_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY
-  if (!KAKAO_REST_KEY) {
-    console.error('VITE_KAKAO_REST_API_KEY가 .env에 설정되지 않았습니다.')
-    return
-  }
-
   // 1단계: GPT로 자연어 → 검색 키워드 변환
   const keyword = await extractKeyword(message)
 
@@ -604,21 +563,9 @@ const searchNearbyPlaces = async (message) => {
   console.log(`🗺️ 검색: "${message}" → "${keyword}" @ (${lat.toFixed(5)}, ${lng.toFixed(5)}) θ=${theta.toFixed(2)}`)
 
   try {
-    const params = new URLSearchParams({
-      query: keyword,
-      y: lat.toString(),
-      x: lng.toString(),
-      radius: '2000',
-      sort: 'distance'
+    const { data } = await api.get('/proxy/kakao/search', {
+      params: { query: keyword, lat, lng, radius: 2000, sort: 'distance' }
     })
-
-    const response = await fetch(
-      `https://dapi.kakao.com/v2/local/search/keyword.json?${params}`,
-      {
-        headers: { 'Authorization': `KakaoAK ${KAKAO_REST_KEY}` }
-      }
-    )
-    const data = await response.json()
 
     let resultText
     if (data.documents && data.documents.length > 0) {

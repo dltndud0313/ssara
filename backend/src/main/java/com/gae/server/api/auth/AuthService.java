@@ -9,6 +9,8 @@ import com.gae.server.api.auth.dto.SignupRequest;
 import com.gae.server.api.auth.dto.TokenResponse;
 import java.security.SecureRandom;
 import com.gae.server.domain.member.Member;
+import com.gae.server.global.exception.BusinessException;
+import org.springframework.http.HttpStatus;
 import com.gae.server.domain.member.MemberRepository;
 import com.gae.server.domain.robot.Robot;
 import com.gae.server.domain.robot.RobotRepository;
@@ -36,10 +38,10 @@ public class AuthService {
     @Transactional
     public void signup(SignupRequest request) {
         if (memberRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("이미 존재하는 이메일입니다.");
+            throw new BusinessException("이미 존재하는 이메일입니다.", HttpStatus.CONFLICT);
         }
         if (robotRepository.existsBySerialNumber(request.getSerialNumber())) {
-            throw new RuntimeException("이미 등록된 로봇 시리얼 번호입니다.");
+            throw new BusinessException("이미 등록된 로봇 시리얼 번호입니다.", HttpStatus.CONFLICT);
         }
 
         Member member = memberRepository.save(Member.builder()
@@ -71,7 +73,7 @@ public class AuthService {
     @Transactional(readOnly = true)
     public FindEmailResponse findEmail(FindEmailRequest request) {
         Member member = memberRepository.findByNameAndPhoneNumber(request.getName(), request.getPhoneNumber())
-                .orElseThrow(() -> new RuntimeException("일치하는 회원 정보가 없습니다."));
+                .orElseThrow(() -> new BusinessException("일치하는 회원 정보가 없습니다."));
 
         return FindEmailResponse.builder()
                 .email(member.getEmail())
@@ -84,7 +86,7 @@ public class AuthService {
     public void resetPassword(ResetPasswordRequest request) {
         Member member = memberRepository.findByEmailAndNameAndPhoneNumber(
                         request.getEmail(), request.getName(), request.getPhoneNumber())
-                .orElseThrow(() -> new RuntimeException("일치하는 회원 정보가 없습니다."));
+                .orElseThrow(() -> new BusinessException("일치하는 회원 정보가 없습니다."));
 
         member.updatePassword(passwordEncoder.encode(request.getNewPassword()));
     }
@@ -93,7 +95,7 @@ public class AuthService {
     @Transactional
     public void sendTempPassword(SendTempPasswordRequest request) {
         Member member = memberRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("가입되지 않은 이메일입니다."));
+                .orElseThrow(() -> new BusinessException("가입되지 않은 이메일입니다."));
 
         // 임시 비밀번호 생성 (8자리 영문+숫자)
         String tempPassword = generateTempPassword();
@@ -105,12 +107,12 @@ public class AuthService {
         emailService.sendTempPassword(member.getEmail(), tempPassword);
     }
 
-    // 임시 비밀번호 생성 (8자리)
+    // 임시 비밀번호 생성 (12자리)
     private String generateTempPassword() {
-        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
         SecureRandom random = new SecureRandom();
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 12; i++) {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();

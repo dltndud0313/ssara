@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import com.gae.server.global.exception.BusinessException;
+import org.springframework.http.HttpStatus;
 
 @Slf4j
 @Service
@@ -32,10 +34,22 @@ public class EmailService {
 
         try {
             mailSender.send(message);
-            log.info("임시 비밀번호 이메일 발송 완료: {}", toEmail);
+            log.info("임시 비밀번호 이메일 발송 완료: {}", maskEmail(toEmail));
         } catch (Exception e) {
             log.error("이메일 발송 실패: {}", e.getMessage());
-            throw new RuntimeException("이메일 발송에 실패했습니다.");
+            throw new BusinessException("이메일 발송에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return "***";
+        }
+        String[] parts = email.split("@");
+        String local = parts[0];
+        if (local.length() <= 2) {
+            return "**@" + parts[1];
+        }
+        return local.substring(0, 2) + "***@" + parts[1];
     }
 }
